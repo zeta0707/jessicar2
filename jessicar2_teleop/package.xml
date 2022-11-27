@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>jessicar2_teleop</name>
+  <version>0.0.1</version>
+  <description>
+    Jessicar II robot package - Teleoperation tools.
+  </description>
+  <license>BSD</license>
+  <buildtool_depend>catkin</buildtool_depend>
+  <author email="pinkwink@omorobot.com">PinkWink</author>
+  <maintainer email="kyuhyong@omorobot.com">Kyuhyong</maintainer>
+  <depend>rospy</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+</package>

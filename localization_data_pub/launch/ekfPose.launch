@@ -1,0 +1,31 @@
+<launch>
+  <!-- Transformation Configuration ... Setting Up the Relationships Between Coordinate Frames -->
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0.06 0 0.08 0 0 0 base_link laser 30" />
+  <node pkg="tf" type="static_transform_publisher" name="imu_broadcaster" args="0 0.06 0.02 0 0 0 base_link imu_link 30" />
+  <node pkg="tf" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0.09 0 0 0 base_footprint base_link 30" />
+ 
+  <include file="$(find localization_data_pub)/launch/odomPub.launch" />
+     
+  <!-- IMU Data Publisher Using the MPU6050 IMU Sensor -->
+  <!-- Publish: /imu/data -->
+  <include file="$(find mpu_6050_driver)/launch/mpu6050.launch" />
+
+  <!-- Extended Kalman Filter from robot_pose_ekf Node-->
+  <!-- Subscribe: /odom, /imu_data, /vo -->
+  <!-- Publish: /robot_pose_ekf/odom_combined -->
+  <remap from="odom" to="odom_data_quat" />
+  <remap from="imu_data" to="imu/data" />
+  <node pkg="robot_pose_ekf" type="robot_pose_ekf" name="robot_pose_ekf">
+    <param name="output_frame" value="odom"/>
+    <param name="base_footprint_frame" value="base_footprint"/>
+    <param name="freq" value="30.0"/>
+    <param name="sensor_timeout" value="1.0"/>
+    <param name="odom_used" value="true"/>
+    <param name="imu_used" value="true"/>
+    <param name="vo_used" value="false"/>
+    <param name="gps_used" value="false"/>
+    <param name="debug" value="false"/>
+    <param name="self_diagnose" value="false"/>
+  </node>
+
+</launch>

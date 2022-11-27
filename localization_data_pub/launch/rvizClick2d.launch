@@ -1,0 +1,8 @@
+<!-- Initial Pose and Goal Publisher -->
+<!-- Publish: /initialpose, /move_base_simple/goal -->
+<launch>
+    <!-- Subscribe: /initialpose, /move_base_simple/goal -->
+    <!-- Publish: /initial_2d, /goal_2d -->
+    <node pkg="localization_data_pub" type="rviz_click_to_2d" name="rviz_click_to_2d">
+    </node>  
+</launch>
