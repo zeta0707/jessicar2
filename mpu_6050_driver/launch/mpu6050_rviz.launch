@@ -1,0 +1,6 @@
+<!-- IMU Data Publisher Using the MPU6050 IMU Sensor -->
+<!-- Publish: /imu/data -->
+<launch>   
+  <!-- launching rviz node -->
+  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find mpu_6050_driver)/rviz/imutf.rviz"/>  
+</launch>

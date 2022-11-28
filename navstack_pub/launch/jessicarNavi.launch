@@ -46,8 +46,8 @@
 <!-- Initial Pose and Goal Publisher -->
 <!-- Publish: /initialpose, /move_base_simple/goal -->
 <!-- 
-  <node pkg="rviz" type="rviz" name="rviz" args="-d /home/jetson/catkin_ws/src/jessicar2/navigation_data_pub/maps/floorplan4.rviz">
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find navigation_data_pub)/rviz/maps/floorplan4.rviz">
   </node> 
- -->
+-->
 
 </launch>

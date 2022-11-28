@@ -7,5 +7,10 @@
 <!--     
     <node pkg="mpu_6050_driver" type="tf_broadcaster_imu.py" name="tf_broadcaster_imu">
     </node>
--->    
+-->   
+
+  <!-- launching rviz node 
+  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find mpu_605_driver)/rviz/imutf.rviz"/>
+  -->
+
 </launch>

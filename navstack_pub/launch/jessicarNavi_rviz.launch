@@ -1,0 +1,7 @@
+<launch>
+<!-- Initial Pose and Goal Publisher -->
+<!-- Publish: /initialpose, /move_base_simple/goal -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find navigation_data_pub)/rviz/maps/floorplan4.rviz">
+  </node> 
+
+</launch>
