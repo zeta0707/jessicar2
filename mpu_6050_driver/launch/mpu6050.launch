@@ -1,16 +1,12 @@
 <!-- IMU Data Publisher Using the MPU6050 IMU Sensor -->
 <!-- Publish: /imu/data -->
-<launch>
-    <node pkg="tf" type="static_transform_publisher" name="imu_broadcaster" args="0 0.06 0.02 0 0 0 base_link imu_link 30" />
+<launch> 
+    <node pkg="tf" type="static_transform_publisher" name="imu_broadcaster" args="0 0.06 0.02 0 0 0 base_link imu_link 30" /> 
     <node pkg="mpu_6050_driver" type="imu_node.py" name="imu_node" output="screen"> 
-    </node>     
-<!--     
+        <param name="frame_id" type="string" value="imu_link"/>
+    </node>    
+<!--         
     <node pkg="mpu_6050_driver" type="tf_broadcaster_imu.py" name="tf_broadcaster_imu">
     </node>
--->   
-
-  <!-- launching rviz node 
-  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find mpu_605_driver)/rviz/imutf.rviz"/>
-  -->
-
+--> 
 </launch>

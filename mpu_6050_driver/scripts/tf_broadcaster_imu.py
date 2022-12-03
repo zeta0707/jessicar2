@@ -17,8 +17,8 @@ def handle_imu_pose(msg):
     t.transform.translation.y = 0
     t.transform.translation.z = 0
     t.transform.rotation.x = msg.orientation.x
-    t.transform.rotation.y = msg.orientation.y
-    t.transform.rotation.z = msg.orientation.z
+    t.transform.rotation.y = msg.orientation.y 
+    t.transform.rotation.z = msg.orientation.z 
     t.transform.rotation.w = msg.orientation.w
 
     br.sendTransform(t)

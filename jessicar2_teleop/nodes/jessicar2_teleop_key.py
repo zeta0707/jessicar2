@@ -83,7 +83,7 @@ def getKey():
     return key
 
 def vels(target_linear_vel, target_angular_vel):
-    return "currently:\tlinear vel %s\t angular vel %s " % (target_linear_vel,target_angular_vel)
+    return "linear vel:%0.2f\t angular vel:%0.2f" % (target_linear_vel,target_angular_vel)
 
 def makeSimpleProfile(output, input, slop):
     if input > output:

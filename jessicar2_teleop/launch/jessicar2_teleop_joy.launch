@@ -12,9 +12,9 @@
   <!-- keyboard teleoperation node for robot -->
   <arg name="set_multi_robot_name" default=""/>
   <node pkg="jessicar2_teleop" type="jessicar2_teleop_joy.py" name="jessicar2_teleop_joystick" output="screen">
-    <param name="max_fwd_vel" value="1.5" />
-    <param name="max_rev_vel" value="1.5" />
-    <param name="max_ang_vel" value="2.0" />
+    <param name="max_fwd_vel" value="0.5" />
+    <param name="max_rev_vel" value="0.5" />
+    <param name="max_ang_vel" value="0.5" />
     <param name="tf_prefix" value="$(arg set_multi_robot_name)"/>
   </node>
 </launch>

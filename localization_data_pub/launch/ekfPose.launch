@@ -1,6 +1,6 @@
 <launch>
   <!-- Transformation Configuration ... Setting Up the Relationships Between Coordinate Frames -->
-  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0.06 0 0.08 0 0 0 base_link laser 30" />
+  <node pkg="tf" type="static_transform_publisher" name="base_link_to_laser" args="0.06 0 0.08 0 0 0 base_link laser_link 30" />
   <node pkg="tf" type="static_transform_publisher" name="base_link_broadcaster" args="0 0 0.09 0 0 0 base_footprint base_link 30" />
  
   <include file="$(find localization_data_pub)/launch/odomPub.launch" />
