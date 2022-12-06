@@ -1,0 +1,6 @@
+<!-- Initial Pose and Goal Publisher -->
+<!-- Publish: /initialpose, /move_base_simple/goal -->
+<launch>
+    <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find localization_data_pub)/rviz/ekfPose.rviz"/>
+    </node>  
+</launch>

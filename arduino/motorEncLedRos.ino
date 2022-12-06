@@ -7,6 +7,7 @@
  * The node also subscribes to linear & angular velocity commands published on 
  * the /cmd_vel topic to drive the robot accordingly.
  * Reference: Practical Robotics in C++ book (ISBN-10 : 9389423465)
+ * motor_controller_diff_drive_2.ino.
  */
 
 #include <ros.h>
@@ -106,19 +107,19 @@ const int PWM_INCREMENT = 1;
 const int TICKS_PER_REVOLUTION = 102;
 
 // Wheel radius in meters. We won't use this in this code.
-const float WHEEL_RADIUS = 0.065;
+const float WHEEL_RADIUS = 0.0325;
 
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
 const float WHEEL_BASE = 0.17;
 
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
-// Distance = 2*3.141592*0.065*ticks/102 = 0.004*ticks
-const float TICKS_PER_METER = 250.0;  // Originally 2880
+// Distance = 3.141592*0.065*ticks/102 = 0.002042*ticks
+const float TICKS_PER_METER = 480.0;  // Originally 2880
 
 // Proportional constant, which was measured by measuring the
 // PWM-Linear Velocity relationship for the robot.
-const int K_P = 278;
+const int K_P = 75;
 
 // Y-intercept for the PWM-Linear Velocity relationship for the robot
 const int b = 42;
@@ -127,15 +128,11 @@ const int b = 42;
 const int DRIFT_MULTIPLIER = 80.0;
 
 // Turning PWM output (0 = min, 255 = max for PWM values)
-const int PWM_TURN = 56;
+const int PWM_TURN = 50;
 
 // Set maximum and minimum limits for the PWM values
-const int PWM_MIN = 50;   // about 0.1 m/s
-const int PWM_MAX = 100;  // about 0.172 m/s
-//const int PWM_MIN = 52;  // about 0.8 m/s, free
-//const int PMW_MID = 69;   // about 1 m/s, free
-//const int PMW_MID = 83;   // about 1.3 m/s, free
-//const int PWM_MAX = 100;  // about 1.6 m/s, free
+const int PWM_MIN = 50;     // about x.xxx m/s
+const int PWM_MAX = 80;     // about x.xxx m/s
 
 // Set linear velocity and PWM variable values for each wheel
 float velLeftWheel = 0.0;

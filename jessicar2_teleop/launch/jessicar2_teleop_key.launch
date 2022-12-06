@@ -2,11 +2,6 @@
   <!-- keyboard teleoperation node for robot -->
   <arg name="set_multi_robot_name" default=""/>
 
-  <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
-    <param name="port" value="/dev/ttyUSB0"/>
-    <param name="baud" value="115200"/>
-  </node>
-
   <node pkg="jessicar2_teleop" type="jessicar2_teleop_key.py" name="jessicar2_teleop_keyboard"  output="screen">
     <param name="max_lin_vel" value="0.5" />
     <param name="max_ang_vel" value="0.5" />

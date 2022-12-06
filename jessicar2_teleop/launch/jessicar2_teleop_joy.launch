@@ -4,11 +4,6 @@
     <param name="deadzone" value="0.12" />
   </node>
 
-  <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
-    <param name="port" value="/dev/ttyUSB0"/>
-    <param name="baud" value="115200"/>
-  </node>
-
   <!-- keyboard teleoperation node for robot -->
   <arg name="set_multi_robot_name" default=""/>
   <node pkg="jessicar2_teleop" type="jessicar2_teleop_joy.py" name="jessicar2_teleop_joystick" output="screen">
