@@ -1,4 +1,4 @@
-image: /home/jetson/catkin_ws/src/jessicar2/navigation_data_pub/maps/floorplan4.pgm
+image: /home/jetson/catkin_ws/src/jessicar2/navstack_pub/maps/floorplan4.pgm
 resolution: 0.050000
 origin: [-1,-1, 0.000000]
 negate: 0
