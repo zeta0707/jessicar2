@@ -10,7 +10,7 @@
 <!-- Publish: /scan -->
 <node name="rplidarNode"            pkg="rplidar_ros"  type="rplidarNode" output="screen">
   <param name="serial_port"         type="string" value="/dev/ttyUSB1"/>
-  <param name="serial_baudrate"     type="int"    value="115200"/><!--A1/A2 -->
+  <param name="serial_baudrate"     type="int"    value="115200"/>
   <param name="frame_id"            type="string" value="laser_link"/>
   <param name="inverted"            type="bool"   value="false"/>
   <param name="angle_compensate"    type="bool"   value="true"/>
@@ -18,5 +18,7 @@
 
 <!-- Publish: /imu/data -->
 <include file="$(find mpu_6050_driver)/launch/mpu6050.launch"/>
+
+<rosparam command="load" file="$(find jessicar2_bringup)/config/motor.yaml" />
 
 </launch>
