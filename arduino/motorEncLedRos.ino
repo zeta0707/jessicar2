@@ -15,17 +15,7 @@
 #include <std_msgs/Float32.h>
 #include <geometry_msgs/Twist.h>
 
-#if (DEBUG == 1)
-#define DEBUG_PRINT(x) Serial.print(x)
-#define DEBUG_PRINTF(x, y) Serial.print(x, y)
-#define DEBUG_PRINTLN(x) Serial.println(x)
-#define DEBUG_PRINTLNF(x, y) Serial.println(x, y)
-#else
-#define DEBUG_PRINT(x)
-#define DEBUG_PRINTF(x, y)
-#define DEBUG_PRINTLN(x)
-#define DEBUG_PRINTLNF(x, y)
-#endif
+#define DEBUG 0
 
 // Handles startup and shutdown of ROS
 ros::NodeHandle nh;
@@ -74,12 +64,6 @@ ros::Publisher rightPub("right_ticks", &right_wheel_tick_count);
 std_msgs::Int16 left_wheel_tick_count;
 ros::Publisher leftPub("left_ticks", &left_wheel_tick_count);
 
-std_msgs::Float32 left_vel_pub;
-ros::Publisher leftvelPub("velLeft", &left_vel_pub);
-
-std_msgs::Float32 right_vel_pub;
-ros::Publisher rightvelPub("velRight", &right_vel_pub);
-
 // Time interval for measurements in milliseconds
 const int interval = 30;
 long previousMillis = 0;
@@ -100,39 +84,34 @@ const int in4 = 6;
 // TB6612 Chip control pins
 #define TB6612_STBY 8
 
-// How much the PWM value can change each cycle
-const int PWM_INCREMENT = 1;
-
 // Number of ticks per wheel revolution. We won't use this in this code.
-const int TICKS_PER_REVOLUTION = 102;
-
+//const int TICKS_PER_REVOLUTION = 102;
 // Wheel radius in meters. We won't use this in this code.
-const float WHEEL_RADIUS = 0.0325;
-
+//const float WHEEL_RADIUS = 0.0325;
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
-const float WHEEL_BASE = 0.17;
+//const float WHEEL_BASE = 0.17;
 
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
 // Distance = 3.141592*0.065*ticks/102 = 0.002042*ticks
-const float TICKS_PER_METER = 480.0;  // Originally 2880
+#define TICKS_PER_METER (480.0)  // Originally 2880
 
 // Proportional constant, which was measured by measuring the
 // PWM-Linear Velocity relationship for the robot.
-const int K_P = 75;
-
+byte K_P = 75;
 // Y-intercept for the PWM-Linear Velocity relationship for the robot
-const int b = 42;
-
-// Correction multiplier for drift. Chosen through experimentation.
-const int DRIFT_MULTIPLIER = 80.0;
-
+byte K_b = 42;
 // Turning PWM output (0 = min, 255 = max for PWM values)
-const int PWM_TURN = 50;
 
 // Set maximum and minimum limits for the PWM values
-const int PWM_MIN = 50;     // about x.xxx m/s
-const int PWM_MAX = 80;     // about x.xxx m/s
+byte PWM_MIN = 50;  // about x.xxx m/s
+byte PWM_MAX = 80;  // about x.xxx m/s
+#define PWM_TURN  PWM_MIN
+// How much the PWM value can change each cycle
+#define PWM_INCREMENT 1
+
+// Correction multiplier for drift. Chosen through experimentation.
+#define DRIFT_MULTIPLIER 80.0
 
 // Set linear velocity and PWM variable values for each wheel
 float velLeftWheel = 0.0;
@@ -224,7 +203,6 @@ void calc_vel_left_wheel() {
 
   // Calculate wheel velocity in meters per second
   velLeftWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
-  left_vel_pub.data = velLeftWheel;
   // Keep track of the previous tick count
   prevLeftCount = left_wheel_tick_count.data;
 
@@ -251,8 +229,6 @@ void calc_vel_right_wheel() {
 
   // Calculate wheel velocity in meters per second
   velRightWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
-  right_vel_pub.data = velRightWheel;
-
   prevRightCount = right_wheel_tick_count.data;
 
   prevTime = (millis() / 1000.0);
@@ -265,11 +241,11 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   lastCmdVelReceived = (millis() / 1000.0);
   if (cmdVel.linear.x >= 0.0) {
     // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * cmdVel.linear.x + b;
-    pwmRightReq = K_P * cmdVel.linear.x + b;
+    pwmLeftReq = K_P * cmdVel.linear.x + K_b;
+    pwmRightReq = K_P * cmdVel.linear.x + K_b;
   } else {
-    pwmLeftReq = K_P * cmdVel.linear.x - b;
-    pwmRightReq = K_P * cmdVel.linear.x - b;
+    pwmLeftReq = K_P * cmdVel.linear.x - K_b;
+    pwmRightReq = K_P * cmdVel.linear.x - K_b;
   }
 
   // Check if we need to turn
@@ -446,11 +422,9 @@ ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
 
 void setup() {
 
-#if (DEBUG == 1)
-  Serial.begin(115200);
-  while (!Serial)
-    ;
-    // wait for Leonardo enumeration, others continue immediately
+  int pwm_constants[4];
+#if DEBUG == 1
+  char buf[3];  //for debugging
 #endif
 
   // Set pin states of the encoder
@@ -492,12 +466,6 @@ void setup() {
   pinMode(BLED, OUTPUT);  // RGB color light blue control pin configuration output
   RGB(100);               // RGB LED all off
 
-#if (DEBUG == 1)
-  while (Serial.available() && Serial.read())
-    ;
-  // empty buffer
-  Serial.end();
-#endif
   // configure LED for output
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -506,10 +474,36 @@ void setup() {
   nh.initNode();
   nh.advertise(rightPub);
   nh.advertise(leftPub);
-  nh.advertise(rightvelPub);
-  nh.advertise(leftvelPub);
   nh.subscribe(subCmdVel);
   nh.subscribe(subLed);
+  while (!nh.connected()) {
+    nh.spinOnce();
+  }
+
+#if DEBUG == 1
+  nh.logwarn("S");
+#endif
+  if (!nh.getParam("/pwmConstants", pwm_constants, 4)) {
+#if DEBUG == 1
+    nh.logwarn("F");
+#endif
+  } else {
+    K_P = pwm_constants[0];
+    K_b = pwm_constants[1];
+    PWM_MIN = pwm_constants[2];
+    PWM_MAX = pwm_constants[3];
+#if DEBUG == 1
+    nh.logwarn("K");
+    sprintf(buf, "%d", pwm_constants[0]);
+    nh.logwarn(buf);
+    sprintf(buf, "%d", pwm_constants[1]);
+    nh.logwarn(buf);
+    sprintf(buf, "%d", pwm_constants[2]);
+    nh.logwarn(buf);
+    sprintf(buf, "%d", pwm_constants[3]);
+    nh.logwarn(buf);
+#endif
+  }
 }
 
 void loop() {
@@ -528,9 +522,6 @@ void loop() {
     // Publish tick counts to topics
     leftPub.publish(&left_wheel_tick_count);
     rightPub.publish(&right_wheel_tick_count);
-    // Publish tick counts to topics
-    leftvelPub.publish(&left_vel_pub);
-    rightvelPub.publish(&right_vel_pub);
 
     // Calculate the velocity of the right and left wheels
     calc_vel_right_wheel();

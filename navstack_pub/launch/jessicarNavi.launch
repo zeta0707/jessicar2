@@ -10,11 +10,13 @@
   <!-- Publish: /amcl_pose, /particlecloud, /tf -->
   <include file="$(find amcl)/examples/amcl_diff.launch"/>
 
-   <!-- Map Server -->
-  <!-- Publish: /map, /map_metadata -->
-  <arg name="map" default="$(find navstack_pub)/maps/floorplan4.yaml"/>
-  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map)" />
+  <!-- Map File -->
+  <arg name="map_file" default="$(find navstack_pub)/maps/floorplan4.yaml"/>
 
+  <!-- Map Server -->
+  <!-- Publish: /map, /map_metadata -->
+  <node pkg="map_server" name="map_server" type="map_server" args="$(arg map_file)" />
+    
   <!-- Move Base Node -->
   <!-- Subscribe: /move_base_simple/goal -->
   <!-- Publish: /cmd_vel -->
@@ -29,7 +31,7 @@
   <!-- Initial Pose and Goal Publisher -->
   <!-- Publish: /initialpose, /move_base_simple/goal -->
   <!-- 
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find navigation_data_pub)/rviz/maps/floorplan4.rviz">
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find navstack_pub)/rviz/maps/floorplan4.rviz">
     </node> 
   -->
 

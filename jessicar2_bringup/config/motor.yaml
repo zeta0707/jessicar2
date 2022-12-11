@@ -1,5 +1,5 @@
 pwmConstants:
-  - 75
-  - 42
-  - 50
-  - 80
+  - 75 # PWM-Linear Velocity relationship for the robot
+  - 42 # Y-intercept for the PWM-Linear Velocity relationship
+  - 50 # minimum limits for the PWM values
+  - 80 # maximum limits for the PWM values
