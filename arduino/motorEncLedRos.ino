@@ -12,10 +12,9 @@
 
 #include <ros.h>
 #include <std_msgs/Int16.h>
-#include <std_msgs/Float32.h>
 #include <geometry_msgs/Twist.h>
 
-#define DEBUG 0
+#define PWM_PARAM 0
 
 // Handles startup and shutdown of ROS
 ros::NodeHandle nh;
@@ -96,16 +95,23 @@ const int in4 = 6;
 // Distance = 3.141592*0.065*ticks/102 = 0.002042*ticks
 #define TICKS_PER_METER (480.0)  // Originally 2880
 
-// Proportional constant, which was measured by measuring the
-// PWM-Linear Velocity relationship for the robot.
-byte K_P = 75;
-// Y-intercept for the PWM-Linear Velocity relationship for the robot
-byte K_b = 42;
-// Turning PWM output (0 = min, 255 = max for PWM values)
+#if PWM_PARAM == 1
+  // Proportional constant, which was measured by measuring the
+  // PWM-Linear Velocity relationship for the robot.
+  int K_P = 75;
+  // Y-intercept for the PWM-Linear Velocity relationship for the robot
+  int K_b = 42;
+  // Turning PWM output (0 = min, 255 = max for PWM values)
+  // Set maximum and minimum limits for the PWM values
+  int PWM_MIN = 50;  // about x.xxx m/s
+  int PWM_MAX = 80;  // about x.xxx m/s
+#else 
+  #define K_P         75
+  #define K_b         42
+  #define PWM_MIN     50
+  #define PWM_MAX     80
+#endif
 
-// Set maximum and minimum limits for the PWM values
-byte PWM_MIN = 50;  // about x.xxx m/s
-byte PWM_MAX = 80;  // about x.xxx m/s
 #define PWM_TURN  PWM_MIN
 // How much the PWM value can change each cycle
 #define PWM_INCREMENT 1
@@ -421,9 +427,8 @@ ros::Subscriber<geometry_msgs::Twist> subCmdVel("cmd_vel", &calc_pwm_values);
 ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
 
 void setup() {
-
+#if PWM_PARAM == 1
   int pwm_constants[4];
-#if DEBUG == 1
   char buf[3];  //for debugging
 #endif
 
@@ -480,19 +485,17 @@ void setup() {
     nh.spinOnce();
   }
 
-#if DEBUG == 1
+#if PWM_PARAM == 1
   nh.logwarn("S");
-#endif
   if (!nh.getParam("/pwmConstants", pwm_constants, 4)) {
-#if DEBUG == 1
     nh.logwarn("F");
-#endif
+
   } else {
     K_P = pwm_constants[0];
     K_b = pwm_constants[1];
     PWM_MIN = pwm_constants[2];
     PWM_MAX = pwm_constants[3];
-#if DEBUG == 1
+
     nh.logwarn("K");
     sprintf(buf, "%d", pwm_constants[0]);
     nh.logwarn(buf);
@@ -502,8 +505,8 @@ void setup() {
     nh.logwarn(buf);
     sprintf(buf, "%d", pwm_constants[3]);
     nh.logwarn(buf);
-#endif
   }
+#endif
 }
 
 void loop() {
