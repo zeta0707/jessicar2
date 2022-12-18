@@ -1,0 +1,4 @@
+<launch>
+  <!-- launching rviz node -->
+  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find jessicar2_cartographer)/rviz/jessicar2_cartographer.rviz"/>
+</launch>

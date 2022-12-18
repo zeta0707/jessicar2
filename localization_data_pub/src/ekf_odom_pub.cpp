@@ -240,6 +240,8 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "ekf_odom_pub");
   ros::NodeHandle node;
  
+  ros::param::get("/initialPoseRecieved", initialPoseRecieved);
+
   // Subscribe to ROS topics
   ros::Subscriber subForRightCounts = node.subscribe("right_ticks", 100, Calc_Right, ros::TransportHints().tcpNoDelay());
   ros::Subscriber subForLeftCounts = node.subscribe("left_ticks", 100, Calc_Left, ros::TransportHints().tcpNoDelay());

@@ -1,0 +1,16 @@
+<launch>
+   <!-- Do all preparation, odometry, Lidar, IMU, initial Pose and Goal-->
+   <!-- Subscribe: /odom, /imu_data, /vo -->
+   <!-- Publish: /robot_pose_ekf/odom_combined -->
+   <include file="$(find localization_data_pub)/launch/ekfPose.launch" />
+
+   <!-- launching cartographer node and parameters -->
+   <node name="cartographer_node" pkg="cartographer_ros" type="cartographer_node" args="
+         -configuration_directory $(find jessicar2_cartographer)/config 
+         -configuration_basename jessicar2_lidar.lua" output="screen">
+      <remap from="scan" to="scan"/>
+   </node>
+   
+   <node name="cartographer_occupancy_grid_node" pkg="cartographer_ros"
+      type="cartographer_occupancy_grid_node" args="-resolution 0.05" />
+</launch>
