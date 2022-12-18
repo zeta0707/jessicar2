@@ -67,6 +67,8 @@ void set_initial_2d(const geometry_msgs::PoseStamped &rvizClick) {
   odomOld.pose.pose.position.y = rvizClick.pose.position.y;
   odomOld.pose.pose.orientation.z = rvizClick.pose.orientation.z;
   initialPoseRecieved = true;
+
+  ROS_WARN("set_initial_2d %d", initialPoseRecieved);
 }
  
 // Calculate the distance the left wheel has traveled since the last cycle
@@ -240,7 +242,8 @@ int main(int argc, char **argv) {
   ros::init(argc, argv, "ekf_odom_pub");
   ros::NodeHandle node;
  
-  ros::param::get("/initialPoseRecieved", initialPoseRecieved);
+  ros::param::get("/ekf_odom_pub/initialPoseRecieved", initialPoseRecieved);
+  ROS_WARN("InitPose %d", initialPoseRecieved);
 
   // Subscribe to ROS topics
   ros::Subscriber subForRightCounts = node.subscribe("right_ticks", 100, Calc_Right, ros::TransportHints().tcpNoDelay());
