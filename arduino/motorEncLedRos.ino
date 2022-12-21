@@ -106,13 +106,13 @@ const int in4 = 6;
   int PWM_MIN = 50;  // about x.xxx m/s
   int PWM_MAX = 80;  // about x.xxx m/s
 #else 
-  #define K_P         75
-  #define K_b         42
-  #define PWM_MIN     50
+  #define K_P         125
+  #define K_b         35
+  #define PWM_MIN     40
   #define PWM_MAX     80
 #endif
 
-#define PWM_TURN  PWM_MIN
+#define PWM_TURN  (PWM_MIN+5)
 // How much the PWM value can change each cycle
 #define PWM_INCREMENT 1
 
@@ -256,16 +256,15 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
 
   // Check if we need to turn
   if (cmdVel.angular.z != 0.0) {
-
     // Turn left
     if (cmdVel.angular.z > 0.0) {
-      //pwmLeftReq = -PWM_TURN;
+      pwmLeftReq = -PWM_TURN;
       pwmRightReq = PWM_TURN;
     }
     // Turn right
     else {
       pwmLeftReq = PWM_TURN;
-      // pwmRightReq = -PWM_TURN;
+      pwmRightReq = -PWM_TURN;
     }
   }
   // Go straight
@@ -339,10 +338,10 @@ void set_pwm_values() {
 
   // Increase the required PWM if the robot is not moving
   if (pwmLeftReq != 0 && velLeftWheel == 0) {
-    pwmLeftReq *= 1.2;
+    pwmLeftReq *= 1.4;
   }
   if (pwmRightReq != 0 && velRightWheel == 0) {
-    pwmRightReq *= 1.2;
+    pwmRightReq *= 1.4;
   }
 
   // Calculate the output PWM value by making slow changes to the current value

@@ -11,7 +11,7 @@
   <include file="$(find amcl)/examples/amcl_diff.launch"/>
 
   <!-- Map File -->
-  <arg name="map_file" default="$(find navstack_pub)/maps/floorplan4.yaml"/>
+  <arg name="map_file" default="$(find navstack_pub)/maps/zetaroom2.yaml"/>
 
   <!-- Map Server -->
   <!-- Publish: /map, /map_metadata -->
