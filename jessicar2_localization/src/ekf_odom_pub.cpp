@@ -113,8 +113,10 @@ void Calc_Right(const std_msgs::Int16& rightCount) {
  
 // Publish a nav_msgs::Odometry message in quaternion format
 void publish_quat() {
+#if 0
   static tf2_ros::TransformBroadcaster br;
   geometry_msgs::TransformStamped transformStamped; 
+#endif
   tf2::Quaternion q;
          
   q.setRPY(0, 0, odomNew.pose.pose.orientation.z);
@@ -136,7 +138,7 @@ void publish_quat() {
   quatOdom.twist.twist.angular.x = odomNew.twist.twist.angular.x;
   quatOdom.twist.twist.angular.y = odomNew.twist.twist.angular.y;
   quatOdom.twist.twist.angular.z = odomNew.twist.twist.angular.z;
-
+#if 0
   transformStamped.header.stamp = quatOdom.header.stamp;
   transformStamped.header.frame_id = quatOdom.header.frame_id;
   transformStamped.child_frame_id = quatOdom.child_frame_id;
@@ -148,7 +150,7 @@ void publish_quat() {
   transformStamped.transform.rotation.z = quatOdom.pose.pose.orientation.z;
   transformStamped.transform.rotation.w = quatOdom.pose.pose.orientation.w;
   br.sendTransform(transformStamped);
-
+#endif
   for(int i = 0; i<36; i++) {
     if(i == 0 || i == 7 || i == 14) {
       quatOdom.pose.covariance[i] = .01;

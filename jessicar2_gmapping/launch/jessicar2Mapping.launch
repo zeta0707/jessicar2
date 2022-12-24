@@ -7,14 +7,14 @@
   
   <!-- Subscribe: /initialpose, /move_base_simple/goal -->
   <!-- Publish: /initial_2d, /goal_2d -->
-  <node pkg="localization_data_pub" type="rviz_click_to_2d" name="rviz_click_to_2d">
+  <node pkg="jessicar2_localization" type="rviz_click_to_2d" name="rviz_click_to_2d">
   </node>
   
 
   <!-- Wheel Odometry Publisher -->
   <!-- Subscribe: /right_ticks, /left_ticks, /initial_2d -->
   <!-- Publish: /odom_data_euler, /odom_data_quat -->
-  <node pkg="localization_data_pub" type="ekf_odom_pub" name="ekf_odom_pub">
+  <node pkg="jessicar2_localization" type="ekf_odom_pub" name="ekf_odom_pub">
     <param name="initialPoseRecieved" type="bool" value="true" />
   </node>
 
