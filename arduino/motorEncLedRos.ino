@@ -15,20 +15,31 @@
 #include <geometry_msgs/Twist.h>
 
 #define PWM_PARAM 0
-
+#define REVERSE_DIR 0
+#define FIXV_ROTATE 1
+#define CAL_VEL 0
 // Handles startup and shutdown of ROS
 ros::NodeHandle nh;
 
 ////////////////// Tick Data Publishing Variables and Constants ///////////////
 
+#if REVERSE_DIR == 1
+// Encoder output to Arduino Interrupt pin. Tracks the tick count.
+#define ENC_IN_LEFT_A 3
+#define ENC_IN_RIGHT_A 2
+// Other encoder output to Arduino to keep track of wheel direction
+// Tracks the direction of rotation.
+#define ENC_IN_LEFT_B 4
+#define ENC_IN_RIGHT_B 5
+#else
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
 #define ENC_IN_LEFT_A 2
 #define ENC_IN_RIGHT_A 3
-
 // Other encoder output to Arduino to keep track of wheel direction
 // Tracks the direction of rotation.
 #define ENC_IN_LEFT_B 5
 #define ENC_IN_RIGHT_B 4
+#endif
 
 // True = Forward; False = Reverse
 boolean Direction_left = true;
@@ -69,16 +80,25 @@ long previousMillis = 0;
 long currentMillis = 0;
 
 ////////////////// Motor Controller Variables and Constants ///////////////////
-
+#if REVERSE_DIR == 1
+// Motor A connections, Left
+const int enA = 9;
+const int in1 = 6;
+const int in2 = 7;
+// Motor B connections, Right
+const int enB = 10;
+const int in3 = 13;
+const int in4 = 12;
+#else
 // Motor A connections, Left
 const int enA = 10;
 const int in1 = 12;
 const int in2 = 13;
-
 // Motor B connections, Right
 const int enB = 9;
 const int in3 = 7;
 const int in4 = 6;
+#endif
 
 // TB6612 Chip control pins
 #define TB6612_STBY 8
@@ -86,7 +106,8 @@ const int in4 = 6;
 // Number of ticks per wheel revolution. We won't use this in this code.
 //const int TICKS_PER_REVOLUTION = 102;
 // Wheel radius in meters. We won't use this in this code.
-//const float WHEEL_RADIUS = 0.0325;
+#define WHEEL_RADIUS (0.0325)
+#define WHEEL_DIA (0.065)
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
 //const float WHEEL_BASE = 0.17;
 
@@ -94,25 +115,26 @@ const int in4 = 6;
 // This value was measured manually.
 // Distance = 3.141592*0.065*ticks/102 = 0.002042*ticks
 #define TICKS_PER_METER (480.0)  // Originally 2880
+#define WHEEL_WIDTH (0.165)
 
 #if PWM_PARAM == 1
-  // Proportional constant, which was measured by measuring the
-  // PWM-Linear Velocity relationship for the robot.
-  int K_P = 75;
-  // Y-intercept for the PWM-Linear Velocity relationship for the robot
-  int K_b = 42;
-  // Turning PWM output (0 = min, 255 = max for PWM values)
-  // Set maximum and minimum limits for the PWM values
-  int PWM_MIN = 50;  // about x.xxx m/s
-  int PWM_MAX = 80;  // about x.xxx m/s
-#else 
-  #define K_P         125
-  #define K_b         35
-  #define PWM_MIN     40
-  #define PWM_MAX     80
+// Proportional constant, which was measured by measuring the
+// PWM-Linear Velocity relationship for the robot.
+int K_P = 75;
+// Y-intercept for the PWM-Linear Velocity relationship for the robot
+int K_b = 42;
+// Turning PWM output (0 = min, 255 = max for PWM values)
+// Set maximum and minimum limits for the PWM values
+int PWM_MIN = 50;  // about x.xxx m/s
+int PWM_MAX = 80;  // about x.xxx m/s
+#else
+#define K_P 125
+#define K_b 35
+#define PWM_MIN 40
+#define PWM_MAX 80
 #endif
 
-#define PWM_TURN  (PWM_MIN+5)
+#define PWM_TURN (PWM_MIN + 5)
 // How much the PWM value can change each cycle
 #define PWM_INCREMENT 1
 
@@ -138,7 +160,11 @@ void right_wheel_tick() {
   // Read the value for the encoder for the right wheel
   int val = digitalRead(ENC_IN_RIGHT_B);
 
+#if REVERSE_DIR == 1
+  if (val == HIGH) {
+#else
   if (val == LOW) {
+#endif
     Direction_right = false;  // Reverse
   } else {
     Direction_right = true;  // Forward
@@ -166,7 +192,11 @@ void left_wheel_tick() {
   // Read the value for the encoder for the left wheel
   int val = digitalRead(ENC_IN_LEFT_B);
 
+#if REVERSE_DIR == 1
+  if (val == LOW) {
+#else
   if (val == HIGH) {
+#endif
     Direction_left = true;  // Reverse
   } else {
     Direction_left = false;  // Forward
@@ -189,6 +219,7 @@ void left_wheel_tick() {
 
 /////////////////////// Motor Controller Functions ////////////////////////////
 
+#if CAL_VEL == 1
 // Calculate the left wheel linear velocity in m/s every time a
 // tick count message is rpublished on the /left_ticks topic.
 void calc_vel_left_wheel() {
@@ -239,7 +270,9 @@ void calc_vel_right_wheel() {
 
   prevTime = (millis() / 1000.0);
 }
+#endif
 
+#if FIXV_ROTATE == 1
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
 
@@ -292,6 +325,54 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
     pwmRightReq = 0;
   }
 }
+#else
+// Take the velocity command as input and calculate the PWM values.
+void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
+  float vLeft, vRight;
+
+  // Record timestamp of last velocity command received
+  lastCmdVelReceived = (millis() / 1000.0);
+  vLeft = (2.0 * cmdVel.linear.x - cmdVel.angular.z * WHEEL_WIDTH) / WHEEL_DIA;
+  vRight = (2.0 * cmdVel.linear.x + cmdVel.angular.z * WHEEL_WIDTH) / WHEEL_DIA;
+
+  if (vLeft >= 0.0) {
+    // Calculate the PWM value given the desired velocity
+    pwmLeftReq = K_P * vLeft + K_b;
+  } else {
+    pwmLeftReq = K_P * vLeft - K_b;
+  }
+  if (vRight >= 0.0) {
+    // Calculate the PWM value given the desired velocity
+    pwmRightReq = K_P * vRight + K_b;
+  } else {
+    pwmRightReq = K_P * vRight - K_b;
+  }
+
+  // go Straied
+  if (cmdVel.angular.z == 0.0) {
+    // Remove any differences in wheel velocities
+    // to make sure the robot goes straight
+    static float prevDiff = 0.0;
+    static float prevPrevDiff = 0.0;
+    float currDifference = velLeftWheel - velRightWheel;
+    float avgDifference = (prevDiff + prevPrevDiff + currDifference) / 3.0;
+    prevPrevDiff = prevDiff;
+    prevDiff = currDifference;
+
+    // Correct PWM values of both wheels to make the vehicle go straight
+    pwmLeftReq -= (avgDifference * DRIFT_MULTIPLIER);
+    pwmRightReq += (avgDifference * DRIFT_MULTIPLIER);
+  }
+
+  // Handle low PWM values
+  if (abs(pwmLeftReq) < PWM_MIN) {
+    pwmLeftReq = 0;
+  }
+  if (abs(pwmRightReq) < PWM_MIN) {
+    pwmRightReq = 0;
+  }
+}
+#endif
 
 void set_pwm_values() {
 
@@ -525,9 +606,11 @@ void loop() {
     leftPub.publish(&left_wheel_tick_count);
     rightPub.publish(&right_wheel_tick_count);
 
+#if CAL_VEL == 1
     // Calculate the velocity of the right and left wheels
     calc_vel_right_wheel();
     calc_vel_left_wheel();
+#endif
 
     // blink LED to indicate activity
     blinkState = !blinkState;
