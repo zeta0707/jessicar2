@@ -14,9 +14,6 @@ MAXCOLOR = 8
 msg = """
 Control Your Robot!
 ---------------------------
-Use LEFT lever while press '1': left, up, right, down
-Press 'X': motor stop
-
 'A' : Change RGB led Rainbow color
 RED = 0,        // red
 GREEN,          // green
@@ -58,16 +55,16 @@ class TeleopJoyNode:
                 self.auto_mode = False
                 rospy.loginfo("AUTO MODE OFF")
         #button 1 press, then acccept joy stick
-        if joymsg.buttons[6] == 1: 
-            if joymsg.axes[1] > 0.0:
-                self.twist.linear.x = joymsg.axes[1] * self.max_fwd_vel
-            elif joymsg.axes[1] < 0.0:
-                self.twist.linear.x = joymsg.axes[1] * self.max_rev_vel
-            else:
-                self.twist.linear.x = 0.0
 
-            self.twist.angular.z = joymsg.axes[0] * self.max_ang_vel
-            print(self.twist.linear.x, self.twist.angular.z)
+        if joymsg.axes[1] > 0.0:
+            self.twist.linear.x = joymsg.axes[1] * self.max_fwd_vel
+        elif joymsg.axes[1] < 0.0:
+            self.twist.linear.x = joymsg.axes[1] * self.max_rev_vel
+        else:
+            self.twist.linear.x = 0.0
+
+        self.twist.angular.z = joymsg.axes[0] * self.max_ang_vel
+        print(self.twist.linear.x, self.twist.angular.z)
 
         #button X press, then stop motor
         if joymsg.buttons[3] == 1: 
