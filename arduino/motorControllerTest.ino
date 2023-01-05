@@ -12,8 +12,27 @@
 
 #include <ros.h>
 #include <std_msgs/Int16.h>
+#include <geometry_msgs/Twist.h>
+#include <PID_v1.h>
 
-////////////////// Tick Data Publishing Variables and Constants ///////////////
+#define FIXV_ROTATE 0
+
+#define JGA25370 0
+#define JGB520 1
+#define MOTORTYPE JGB520
+
+#define USE_PID 1
+#if USE_PID == 1
+double trackAdjustValue = 0.0;
+double trackSetpoint = 0.0;
+double trackError = 0.0;
+
+double Kp = 12.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
+double Ki = 2.0;   //Determines how aggressively the PID reacts to error over time (Integral)
+double Kd = 1.0;   //Determines how aggressively the PID reacts to the change in error (Derivative)
+
+PID trackPID(&trackError, &trackAdjustValue, &trackSetpoint, Kp, Ki, Kd, DIRECT);
+#endif
 
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
 #define ENC_IN_LEFT_A 2
@@ -44,10 +63,9 @@ long currentMillis = 0;
 ////////////////// Motor Controller Variables and Constants ///////////////////
 
 // Motor A connections, Left
-const int enA = 10; 
+const int enA = 10;
 const int in1 = 12;
 const int in2 = 13;
-
 // Motor B connections, Right
 const int enB = 9;
 const int in3 = 7;
@@ -56,35 +74,41 @@ const int in4 = 6;
 // TB6612 Chip control pins
 #define TB6612_STBY 8
 
-// How much the PWM value can change each cycle
-const int PWM_INCREMENT = 1;
-
 // Number of ticks per wheel revolution. We won't use this in this code.
-const int TICKS_PER_REVOLUTION = 102;
+
 // Wheel radius in meters. We won't use this in this code.
-const float WHEEL_RADIUS = 0.065;
+#define WHEEL_RADIUS (0.033)
+#define WHEEL_DIAMETER (WHEEL_RADIUS * 2)
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
-const float WHEEL_BASE = 0.17;
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
-// Distance = 2*3.141592*0.065*ticks/102 = 0.004*ticks
-const float TICKS_PER_METER = 250.0;  // Originally 2880
+#if MOTORTYPE == JGB520
+#define TICKS_PER_REVOLUTION (1720.0)
+#else
+#define TICKS_PER_REVOLUTION (102.0)
+#endif
 
-// Proportional constant, which was measured by measuring the
-// PWM-Linear Velocity relationship for the robot.
-const int K_P = 32;
-// Y-intercept for the PWM-Linear Velocity relationship for the robot
-const int b = 42;
+#define TICKS_PER_METER (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS))
+#define WHEEL_BASE (0.140)
+
+#if MOTORTYPE == JGB520
+#define K_P 1160.0
+#define K_b 10.0
+#define PWM_MIN 80.0   // about 0.07 m/s
+#define PWM_MAX 200.0  // about 0.14 m/s
+#define K_bias 0.0     // left is much slow
+#else
+#define K_P 125
+#define K_b 35
+#define PWM_MIN 40
+#define PWM_MAX 80
+#endif
+
+#define PWM_TURN (PWM_MIN)
+// How much the PWM value can change each cycle
+#define PWM_INCREMENT 1
 // Correction multiplier for drift. Chosen through experimentation.
-const int DRIFT_MULTIPLIER = 120.0;
-// Turning PWM output (0 = min, 255 = max for PWM values)
-const int PWM_TURN = 52;
-
-// Set maximum and minimum limits for the PWM values
-const int PWM_MIN = 52;     // about 0.8 m/s, free
-//const int PMW_MID = 69;   // about 1 m/s, free
-//const int PMW_MID = 83;   // about 1.3 m/s, free
-const int PWM_MAX = 100;    // about 1.6 m/s, free
+#define DRIFT_MULTIPLIER 80.0
 
 // Set linear velocity and PWM variable values for each wheel
 float velLeftWheel = 0.0;
@@ -153,7 +177,6 @@ void left_wheel_tick() {
 }
 
 /////////////////////// Motor Controller Functions ////////////////////////////
-
 // Calculate the left wheel linear velocity in m/s every time a
 // tick count message is rpublished on the /left_ticks topic.
 void calc_vel_left_wheel() {
@@ -168,13 +191,12 @@ void calc_vel_left_wheel() {
   int numOfTicks = (65535 + left_wheel_tick_count.data - prevLeftCount) % 65535;
 
   // If we have had a big jump, it means the tick count has rolled over.
-  if (numOfTicks > 10000) {
+  if (numOfTicks > 30000) {
     numOfTicks = 0 - (65535 - numOfTicks);
   }
 
   // Calculate wheel velocity in meters per second
   velLeftWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
-
   // Keep track of the previous tick count
   prevLeftCount = left_wheel_tick_count.data;
 
@@ -182,7 +204,6 @@ void calc_vel_left_wheel() {
   prevTime = (millis() / 1000.0);
   Serial.print("L:");  Serial.print(velLeftWheel, 3);
   Serial.print(",");  Serial.print(numOfTicks);
-  Serial.print(",");  Serial.println(prevTime, 2);
 }
 
 // Calculate the right wheel linear velocity in m/s every time a
@@ -198,67 +219,46 @@ void calc_vel_right_wheel() {
   // Manage rollover and rollunder when we get outside the 16-bit integer range
   int numOfTicks = (65535 + right_wheel_tick_count.data - prevRightCount) % 65535;
 
-  if (numOfTicks > 10000) {
+  if (numOfTicks > 30000) {
     numOfTicks = 0 - (65535 - numOfTicks);
   }
 
   // Calculate wheel velocity in meters per second
   velRightWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
-
   prevRightCount = right_wheel_tick_count.data;
 
   prevTime = (millis() / 1000.0);
 
   Serial.print("R:"); Serial.print(velRightWheel, 3);
   Serial.print(","); Serial.print(numOfTicks);
-  Serial.print(","); Serial.println(prevTime, 2);
 }
 
+#if FIXV_ROTATE == 1
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(float linearx, float angularz) {
 
-  // Record timestamp of last velocity command received
-  lastCmdVelReceived = (millis() / 1000.0);
-
   if (linearx >= 0.0) {
     // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * linearx + b;
-    pwmRightReq = K_P * linearx + b;
+    pwmLeftReq = K_P * linearx + K_b + K_bias;
+    pwmRightReq = K_P * linearx + K_b;
   } else {
-    // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * linearx - b;
-    pwmRightReq = K_P * linearx - b;
+    pwmLeftReq = K_P * linearx - K_b - K_bias;
+    pwmRightReq = K_P * linearx - K_b;
   }
 
-  // Check if we need to turn
-  if (angularz != 0.0) {
-
-    // Turn left
-    if (angularz > 0.0) {
-      //pwmLeftReq = -PWM_TURN;
-      pwmRightReq = PWM_TURN;
-    }
-    // Turn right
-    else {
-      pwmLeftReq = PWM_TURN;
-      //pwmRightReq = -PWM_TURN;
-    }
+  // Turn left
+  if (angularz > 0.4) {
+    pwmLeftReq = -PWM_TURN;
+    pwmRightReq = PWM_TURN;
+    goStraight = false;
   }
-  // Go straight
-  else {
-
-    // Remove any differences in wheel velocities
-    // to make sure the robot goes straight
-    static float prevDiff = 0.0;
-    static float prevPrevDiff = 0.0;
-    float currDifference = velLeftWheel - velRightWheel;
-    float avgDifference = (prevDiff + prevPrevDiff + currDifference) / 3.0;
-    prevPrevDiff = prevDiff;
-    prevDiff = currDifference;
-
-    // Correct PWM values of both wheels to make the vehicle go straight
-    pwmLeftReq -= (avgDifference * DRIFT_MULTIPLIER);
-    pwmRightReq += (avgDifference * DRIFT_MULTIPLIER);
+  // Turn right
+  else if (angularz < -0.4) {
+    pwmLeftReq = PWM_TURN;
+    pwmRightReq = -PWM_TURN;
+    goStraight = false;
+  } else {
+    goStraight = true;
   }
 
   // Handle low PWM values
@@ -268,6 +268,39 @@ void calc_pwm_values(float linearx, float angularz) {
   if (abs(pwmRightReq) < PWM_MIN) {
     pwmRightReq = 0;
   }
+#else
+// Take the velocity command as input and calculate the PWM values.
+void calc_pwm_values(float linearx, float angularz) {
+
+  float vLeft, vRight;
+
+  vLeft = (2.0 * linearx - angularz * WHEEL_BASE) / 2.0;
+  vRight = (2.0 * linearx + angularz * WHEEL_BASE) / 2.0;
+
+  if (vLeft >= 0.0) {
+    // Calculate the PWM value given the desired velocity
+    pwmLeftReq = K_P * vLeft + K_b;
+  } else {
+    pwmLeftReq = K_P * vLeft - K_b;
+  }
+  if (vRight >= 0.0) {
+    // Calculate the PWM value given the desired velocity
+    pwmRightReq = K_P * vRight + K_b;
+  } else {
+    pwmRightReq = K_P * vRight - K_b;
+  }
+
+  if (angularz == 0.0)
+    goStraight = true;
+
+  // Handle low PWM values
+  if (abs(pwmLeftReq) < PWM_MIN) {
+    pwmLeftReq = 0;
+  }
+  if (abs(pwmRightReq) < PWM_MIN) {
+    pwmRightReq = 0;
+  }
+#endif
 
   Serial.print("cPWM:");
   Serial.print(pwmLeftReq);
@@ -284,10 +317,20 @@ void set_pwm_values() {
   // If the required PWM is of opposite sign as the output PWM, we want to
   // stop the car before switching direction
   static bool stopped = false;
-  //if ((pwmLeftReq * velLeftWheel < 0 && pwmLeftOut != 0) || (pwmRightReq * velRightWheel < 0 && pwmRightOut != 0)) {
-  //  pwmLeftReq = 0;
-  //  pwmRightReq = 0;
-  //}
+
+  //go straight, make PID for velocity loop
+  if (goStraight == true) {
+    trackError = velRightWheel - velLeftWheel;
+    trackError *= 10;
+
+    if (trackPID.Compute())  //true if PID has triggered
+      pwmRightReq += trackAdjustValue;
+
+    Serial.print("COM:");
+    Serial.print(trackError, 3);
+    Serial.print(":");
+    Serial.println(trackAdjustValue);
+  }
 
   // Set the direction of the motors
   if (pwmLeftReq > 0) {  // Left wheel forward
@@ -318,16 +361,8 @@ void set_pwm_values() {
     digitalWrite(in4, LOW);
   }
 
-  // Increase the required PWM if the robot is not moving
-  //if (pwmLeftReq != 0 && (velLeftWheel == 0.00)) {
-  //pwmLeftReq *= 1.1; //always go to max
-  //}
-  //if (pwmRightReq != 0 && (velRightWheel == 0.00)) {
-  //pwmRightReq *= 1.1; //always go to max
-  //}
-
-  //Serial.print("sReq:"); Serial.print(pwmLeftReq);
-  //Serial.print(":"); Serial.println(pwmRightReq);
+  Serial.print("sReq:"); Serial.print(pwmLeftReq);
+  Serial.print(":"); Serial.println(pwmRightReq);
 
   // Calculate the output PWM value by making slow changes to the current value
   if (abs(pwmLeftReq) > pwmLeftOut) {
@@ -348,8 +383,8 @@ void set_pwm_values() {
   pwmLeftOut = (pwmLeftOut > PWM_MAX) ? PWM_MAX : pwmLeftOut;
   pwmRightOut = (pwmRightOut > PWM_MAX) ? PWM_MAX : pwmRightOut;
 
-  //Serial.print("sOut:"); Serial.print(pwmLeftOut);
-  //Serial.print(":"); Serial.println(pwmRightOut);
+  Serial.print("sOut:"); Serial.print(pwmLeftOut);
+  Serial.print(":"); Serial.println(pwmRightOut);
   // PWM output cannot be less than 0
   pwmLeftOut = (pwmLeftOut < 0) ? 0 : pwmLeftOut;
   pwmRightOut = (pwmRightOut < 0) ? 0 : pwmRightOut;
@@ -394,29 +429,47 @@ void setup() {
   // Set the motor speed
   analogWrite(enA, 0);
   analogWrite(enB, 0);
+
+#if USE_PID == 1
+  trackAdjustValue = 0;
+  trackSetpoint = 0;
+  trackError = 0;
+
+  trackPID.SetMode(AUTOMATIC);
+  trackPID.SetSampleTime(200);
+  trackPID.SetOutputLimits(-20, 20);
+#endif
 }
 
 void loop() {
-  float linearx;
+  float linearx, angularz;
+
   // Record the time
   currentMillis = millis();
 
+  //input like "0.15 -0.5"
   if (Serial.available() > 0) {
-    float linearx = Serial.parseFloat(SKIP_ALL, '\n');
+    linearx = Serial.parseFloat(SKIP_ALL, '\n');
+    angularz = Serial.parseFloat(SKIP_ALL, '\n');
+
     //prints the received float number
     Serial.println(linearx);
-    calc_pwm_values(0.0, linearx);
+    Serial.println(angularz);
+    calc_pwm_values(linearx, angularz);
   }
 
   // If the time interval has passed, publish the number of ticks,
   // and calculate the velocities.
   if (currentMillis - previousMillis > interval) {
-    
     previousMillis = currentMillis;
+    // blink LED to indicate activity
+    blinkState = !blinkState;
+    digitalWrite(LED_BUILTIN, blinkState);
 
     // Calculate the velocity of the right and left wheels
     calc_vel_right_wheel();
     calc_vel_left_wheel();
   }
+
   set_pwm_values();
 }

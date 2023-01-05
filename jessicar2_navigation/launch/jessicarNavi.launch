@@ -3,6 +3,7 @@
   <!-- Do all preparation, odometry, Lidar, IMU, initial Pose and Goal-->
   <!-- Subscribe: /odom, /imu_data, /vo -->
   <!-- Publish: /robot_pose_ekf/odom_combined -->
+
   <include file="$(find jessicar2_localization)/launch/ekfPose.launch" />
 
   <!-- Add AMCL example for differential drive robots for Localization -->
@@ -27,12 +28,5 @@
     <rosparam file="$(find jessicar2_navigation)/param/global_costmap_params.yaml" command="load" ns="global_costmap" />
     <rosparam file="$(find jessicar2_navigation)/param/base_local_planner_params.yaml" command="load" />
   </node>
-
-  <!-- Initial Pose and Goal Publisher -->
-  <!-- Publish: /initialpose, /move_base_simple/goal -->
-  <!-- 
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find navstack_pub)/rviz/maps/floorplan4.rviz">
-    </node> 
-  -->
 
 </launch>

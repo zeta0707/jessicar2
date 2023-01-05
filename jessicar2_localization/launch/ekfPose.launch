@@ -7,8 +7,7 @@
 
   <!-- Subscribe: /initialpose, /move_base_simple/goal -->
   <!-- Publish: /initial_2d, /goal_2d -->
-  <node pkg="jessicar2_localization" type="rviz_click_to_2d" name="rviz_click_to_2d">
-  </node>
+  <node pkg="jessicar2_localization" type="rviz_click_to_2d" name="rviz_click_to_2d" />
   
   <!-- Wheel Odometry Publisher -->
   <!-- Subscribe: /right_ticks, /left_ticks, /initial_2d -->
