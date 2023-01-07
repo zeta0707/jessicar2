@@ -15,6 +15,18 @@
 #define ENC_IN_LEFT_B 5
 #define ENC_IN_RIGHT_B 4
 
+// Motor A connections, Left
+const int enA = 10;
+const int in1 = 12;
+const int in2 = 13;
+// Motor B connections, Right
+const int enB = 9;
+const int in3 = 7;
+const int in4 = 6;
+
+// TB6612 Chip control pins
+#define TB6612_STBY 8
+
 // True = Forward; False = Reverse
 boolean Direction_left = true;
 boolean Direction_right = true;
@@ -32,37 +44,7 @@ int interval = 1000;
 long previousMillis = 0;
 long currentMillis = 0;
 
-void setup() {
-  // Open the serial port at 115200 bps
-  Serial.begin(115200);
-
-  // Set pin states of the encoder
-  pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
-  pinMode(ENC_IN_LEFT_B, INPUT);
-  pinMode(ENC_IN_RIGHT_A, INPUT_PULLUP);
-  pinMode(ENC_IN_RIGHT_B, INPUT);
-
-  // Every time the pin goes high, this is a tick
-  attachInterrupt(digitalPinToInterrupt(ENC_IN_LEFT_A), left_wheel_tick, RISING);
-  attachInterrupt(digitalPinToInterrupt(ENC_IN_RIGHT_A), right_wheel_tick, RISING);
-}
-
-void loop() {
-
-  // Record the time
-  currentMillis = millis();
-
-  // If one second has passed, print the number of ticks
-  if (currentMillis - previousMillis > interval) {
-
-    previousMillis = currentMillis;
-
-    Serial.print("L:");
-    Serial.print(left_wheel_tick_count);
-    Serial.print(",R:");
-    Serial.println(right_wheel_tick_count);
-  }
-}
+int pwmReq = 0;
 
 // Increment the number of ticks
 void right_wheel_tick() {
@@ -116,5 +98,103 @@ void left_wheel_tick() {
     } else {
       left_wheel_tick_count--;
     }
+  }
+}
+
+void set_pwm_values() {
+  // Set the direction of the motors
+  if (pwmReq > 0) {  // Left wheel forward
+    digitalWrite(in1, HIGH);
+    digitalWrite(in2, LOW);
+  } else if (pwmReq < 0) {  // Left wheel reverse
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, HIGH);
+  } else {  // Left wheel stop
+    digitalWrite(in1, LOW);
+    digitalWrite(in2, LOW);
+  }
+
+  if (pwmReq > 0) {  // Right wheel forward
+    digitalWrite(in3, HIGH);
+    digitalWrite(in4, LOW);
+  } else if (pwmReq < 0) {  // Right wheel reverse
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, HIGH);
+  } else {  // Right wheel stop
+    digitalWrite(in3, LOW);
+    digitalWrite(in4, LOW);
+  }
+  // Set the PWM value on the pins
+  analogWrite(enA, pwmReq);
+  analogWrite(enB, pwmReq);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  Serial.println("Motor econder test");
+  // Set pin states of the encoder
+  pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
+  pinMode(ENC_IN_LEFT_B, INPUT);
+  pinMode(ENC_IN_RIGHT_A, INPUT_PULLUP);
+  pinMode(ENC_IN_RIGHT_B, INPUT);
+
+  // Every time the pin goes high, this is a tick
+  attachInterrupt(digitalPinToInterrupt(ENC_IN_LEFT_A), left_wheel_tick, RISING);
+  attachInterrupt(digitalPinToInterrupt(ENC_IN_RIGHT_A), right_wheel_tick, RISING);
+
+  // Motor control pins are outputs
+  pinMode(enA, OUTPUT);
+  pinMode(enB, OUTPUT);
+  pinMode(in1, OUTPUT);
+  pinMode(in2, OUTPUT);
+  pinMode(in3, OUTPUT);
+  pinMode(in4, OUTPUT);
+
+  // Turn off motors - Initial state
+  digitalWrite(in1, LOW);
+  digitalWrite(in2, LOW);
+  digitalWrite(in3, LOW);
+  digitalWrite(in4, LOW);
+
+  pinMode(TB6612_STBY, OUTPUT);  // TB6612 Enable control pin configuration output
+  digitalWrite(TB6612_STBY, HIGH);
+
+  // Set the motor speed
+  analogWrite(enA, 0);
+  analogWrite(enB, 0);
+}
+
+void loop() {
+  char rc = 0;
+  // Record the time
+  currentMillis = millis();
+
+  //input a, s, d
+  if (Serial.available() > 0) {
+    rc = Serial.read();
+
+    if (rc == 'a')
+      pwmReq += 10;
+    else if (rc == 'd')
+      pwmReq -= 10;
+    else if (rc == 's')
+      pwmReq = 0;
+
+    Serial.print(rc);
+    Serial.print(":");
+    Serial.println(pwmReq);
+  }
+
+  set_pwm_values();
+  // If one second has passed, print the number of ticks
+  if (currentMillis - previousMillis > interval) {
+
+    previousMillis = currentMillis;
+
+    Serial.print("L:");
+    Serial.print(left_wheel_tick_count);
+    Serial.print(",R:");
+    Serial.println(right_wheel_tick_count);
   }
 }

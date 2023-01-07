@@ -46,11 +46,15 @@ const double initialTheta = 0.00000000001;
 const double PI = 3.141592;
 
 // Robot physical constants
+#if 1
 const double TICKS_PER_REVOLUTION = 102.0; // For reference purposes.
-const double WHEEL_RADIUS = 0.0325; // Wheel radius in meters
-const double WHEEL_BASE = 0.17; // Center of left tire to center of right tire
-const double TICKS_PER_METER = 480.0; // Original was 2800
- 
+#else
+const double TICKS_PER_REVOLUTION = 1860.0; // For reference purposes.
+#endif
+const double WHEEL_RADIUS = 0.033; // Wheel radius in meters
+const double WHEEL_BASE = 0.15; // Center of left tire to center of right tire
+const double TICKS_PER_METER = (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS));
+
 // Distance both wheels have traveled
 double distanceLeft = 0;
 double distanceRight = 0;
@@ -100,7 +104,7 @@ void Calc_Right(const std_msgs::Int16& rightCount) {
     int rightTicks = rightCount.data - lastCountR;
      
     if (rightTicks > 10000) {
-      distanceRight = (0 - (65535 - distanceRight))/TICKS_PER_METER;
+      rightTicks = 0 - (65535 - rightTicks);
     }
     else if (rightTicks < -10000) {
       rightTicks = 65535 - rightTicks;
@@ -113,10 +117,7 @@ void Calc_Right(const std_msgs::Int16& rightCount) {
  
 // Publish a nav_msgs::Odometry message in quaternion format
 void publish_quat() {
-#if 0
-  static tf2_ros::TransformBroadcaster br;
-  geometry_msgs::TransformStamped transformStamped; 
-#endif
+
   tf2::Quaternion q;
          
   q.setRPY(0, 0, odomNew.pose.pose.orientation.z);
@@ -124,7 +125,7 @@ void publish_quat() {
   nav_msgs::Odometry quatOdom;
   quatOdom.header.stamp = odomNew.header.stamp;
   quatOdom.header.frame_id = "odom";
-  quatOdom.child_frame_id = "base_link";
+  quatOdom.child_frame_id = "base_footprint";
   quatOdom.pose.pose.position.x = odomNew.pose.pose.position.x;
   quatOdom.pose.pose.position.y = odomNew.pose.pose.position.y;
   quatOdom.pose.pose.position.z = odomNew.pose.pose.position.z;
@@ -138,19 +139,7 @@ void publish_quat() {
   quatOdom.twist.twist.angular.x = odomNew.twist.twist.angular.x;
   quatOdom.twist.twist.angular.y = odomNew.twist.twist.angular.y;
   quatOdom.twist.twist.angular.z = odomNew.twist.twist.angular.z;
-#if 0
-  transformStamped.header.stamp = quatOdom.header.stamp;
-  transformStamped.header.frame_id = quatOdom.header.frame_id;
-  transformStamped.child_frame_id = quatOdom.child_frame_id;
-  transformStamped.transform.translation.x = quatOdom.pose.pose.position.x;
-  transformStamped.transform.translation.y = quatOdom.pose.pose.position.y;
-  transformStamped.transform.translation.z = quatOdom.pose.pose.position.z;
-  transformStamped.transform.rotation.x = quatOdom.pose.pose.orientation.x;
-  transformStamped.transform.rotation.y = quatOdom.pose.pose.orientation.y;
-  transformStamped.transform.rotation.z = quatOdom.pose.pose.orientation.z;
-  transformStamped.transform.rotation.w = quatOdom.pose.pose.orientation.w;
-  br.sendTransform(transformStamped);
-#endif
+
   for(int i = 0; i<36; i++) {
     if(i == 0 || i == 7 || i == 14) {
       quatOdom.pose.covariance[i] = .01;
@@ -241,10 +230,10 @@ int main(int argc, char **argv) {
   odomOld.pose.pose.orientation.z = initialTheta;
  
   // Launch ROS and create a node
-  ros::init(argc, argv, "ekf_odom_pub");
+  ros::init(argc, argv, "odom_pub");
   ros::NodeHandle node;
  
-  ros::param::get("/ekf_odom_pub/initialPoseRecieved", initialPoseRecieved);
+  ros::param::get("/odom_pub/initialPoseRecieved", initialPoseRecieved);
   ROS_WARN("InitPose %d", initialPoseRecieved);
 
   // Subscribe to ROS topics
@@ -254,7 +243,6 @@ int main(int argc, char **argv) {
  
   // Publisher of simple odom message where orientation.z is an euler angle
   odom_data_pub = node.advertise<nav_msgs::Odometry>("odom_data_euler", 100);
- 
   // Publisher of full odom message where orientation is quaternion
   odom_data_pub_quat = node.advertise<nav_msgs::Odometry>("odom_data_quat", 100);
  

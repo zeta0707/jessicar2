@@ -17,7 +17,7 @@
   <!-- Wheel Odometry Publisher -->
   <!-- Subscribe: /right_ticks, /left_ticks, /initial_2d -->
   <!-- Publish: /odom_data_euler, /odom_data_quat -->
-  <node pkg="jessicar2_localization" type="ekf_odom_pub" name="ekf_odom_pub">
+  <node pkg="jessicar2_localization" type="odom_pub" name="odom_pub">
   </node>
    
 </launch>

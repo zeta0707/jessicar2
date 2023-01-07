@@ -12,26 +12,39 @@
 
 #include <ros.h>
 #include <std_msgs/Int16.h>
+#include <std_msgs/Float32.h>
 #include <geometry_msgs/Twist.h>
+#include <PID_v1.h>
 
 #define PWM_PARAM 0
-#define REVERSE_DIR 0
-#define FIXV_ROTATE 1
-#define CAL_VEL 0
+#define PUB_VEL 0
+#define VleftVRight 1
+#define USE_LED 0
+
+#define JGA25370 0
+#define JGB520 1
+#define MOTORTYPE JGB520
+
+#define USE_PID 1
+#if USE_PID == 1
+double trackAdjustValueL = 0.0;
+double trackSetpointL = 0.0;
+double trackErrorL = 0.0;
+double trackAdjustValueR = 0.0;
+double trackSetpointR = 0.0;
+double trackErrorR = 0.0;
+
+double Kp = 4.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
+double Ki = 2.0;  //Determines how aggressively the PID reacts to error over time (Integral)
+double Kd = 1.0;  //Determines how aggressively the PID reacts to the change in error (Derivative)
+
+PID trackPIDLeft(&trackErrorL, &trackAdjustValueL, &trackSetpointL, Kp, Ki, Kd, DIRECT);
+PID trackPIDRight(&trackErrorR, &trackAdjustValueR, &trackSetpointR, Kp, Ki, Kd, DIRECT);
+#endif
+
 // Handles startup and shutdown of ROS
 ros::NodeHandle nh;
 
-////////////////// Tick Data Publishing Variables and Constants ///////////////
-
-#if REVERSE_DIR == 1
-// Encoder output to Arduino Interrupt pin. Tracks the tick count.
-#define ENC_IN_LEFT_A 3
-#define ENC_IN_RIGHT_A 2
-// Other encoder output to Arduino to keep track of wheel direction
-// Tracks the direction of rotation.
-#define ENC_IN_LEFT_B 4
-#define ENC_IN_RIGHT_B 5
-#else
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
 #define ENC_IN_LEFT_A 2
 #define ENC_IN_RIGHT_A 3
@@ -39,7 +52,6 @@ ros::NodeHandle nh;
 // Tracks the direction of rotation.
 #define ENC_IN_LEFT_B 5
 #define ENC_IN_RIGHT_B 4
-#endif
 
 // True = Forward; False = Reverse
 boolean Direction_left = true;
@@ -67,12 +79,19 @@ enum COLOR {
   ALL_OFF   // off(black)
 };
 
+////////////////// Tick Data Publishing Variables and Constants ///////////////
 // Keep track of the number of wheel ticks
 std_msgs::Int16 right_wheel_tick_count;
 ros::Publisher rightPub("right_ticks", &right_wheel_tick_count);
-
 std_msgs::Int16 left_wheel_tick_count;
 ros::Publisher leftPub("left_ticks", &left_wheel_tick_count);
+
+#if PUB_VEL == 1
+std_msgs::Float32 left_vel_pub;
+ros::Publisher leftvelPub("velLeft", &left_vel_pub);
+std_msgs::Float32 right_vel_pub;
+ros::Publisher rightvelPub("velRight", &right_vel_pub);
+#endif
 
 // Time interval for measurements in milliseconds
 const int interval = 30;
@@ -80,16 +99,6 @@ long previousMillis = 0;
 long currentMillis = 0;
 
 ////////////////// Motor Controller Variables and Constants ///////////////////
-#if REVERSE_DIR == 1
-// Motor A connections, Left
-const int enA = 9;
-const int in1 = 6;
-const int in2 = 7;
-// Motor B connections, Right
-const int enB = 10;
-const int in3 = 13;
-const int in4 = 12;
-#else
 // Motor A connections, Left
 const int enA = 10;
 const int in1 = 12;
@@ -98,24 +107,26 @@ const int in2 = 13;
 const int enB = 9;
 const int in3 = 7;
 const int in4 = 6;
-#endif
 
 // TB6612 Chip control pins
 #define TB6612_STBY 8
 
 // Number of ticks per wheel revolution. We won't use this in this code.
-//const int TICKS_PER_REVOLUTION = 102;
-// Wheel radius in meters. We won't use this in this code.
-#define WHEEL_RADIUS (0.0325)
-#define WHEEL_DIA (0.065)
-// Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
-//const float WHEEL_BASE = 0.17;
 
+// Wheel radius in meters. We won't use this in this code.
+#define WHEEL_RADIUS (0.033)
+#define WHEEL_DIAMETER (WHEEL_RADIUS * 2)
+// Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
-// Distance = 3.141592*0.065*ticks/102 = 0.002042*ticks
-#define TICKS_PER_METER (480.0)  // Originally 2880
-#define WHEEL_WIDTH (0.165)
+#if MOTORTYPE == JGB520
+#define TICKS_PER_REVOLUTION (1860.0)
+#else
+#define TICKS_PER_REVOLUTION (102.0)
+#endif
+
+#define TICKS_PER_METER (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS))
+#define WHEEL_BASE (0.140)
 
 #if PWM_PARAM == 1
 // Proportional constant, which was measured by measuring the
@@ -128,28 +139,39 @@ int K_b = 42;
 int PWM_MIN = 50;  // about x.xxx m/s
 int PWM_MAX = 80;  // about x.xxx m/s
 #else
+
+#if MOTORTYPE == JGB520
+#define K_P 1125.0
+#define K_b 3.5
+#define PWM_MIN 60.0   // about 0.05 m/s
+#define PWM_MAX 240.0  // about 0.2 m/s
+#define K_bias 5.0     // left is slow, then add this bias
+#else
 #define K_P 125
 #define K_b 35
 #define PWM_MIN 40
 #define PWM_MAX 80
 #endif
 
-#define PWM_TURN (PWM_MIN + 5)
+#endif
+
+#define PWM_TURN (PWM_MIN)
 // How much the PWM value can change each cycle
 #define PWM_INCREMENT 1
-
 // Correction multiplier for drift. Chosen through experimentation.
 #define DRIFT_MULTIPLIER 80.0
 
 // Set linear velocity and PWM variable values for each wheel
 float velLeftWheel = 0.0;
 float velRightWheel = 0.0;
-float pwmLeftReq = 0.0;
-float pwmRightReq = 0.0;
+float vLeft = 0.0;
+float vRight = 0.0;
+
+int pwmLeftReq = 0;
+int pwmRightReq = 0;
 
 // Record the time that the last velocity command was received
 float lastCmdVelReceived = 0.0;
-
 bool blinkState = false;
 
 /////////////////////// Tick Data Publishing Functions ////////////////////////
@@ -160,11 +182,7 @@ void right_wheel_tick() {
   // Read the value for the encoder for the right wheel
   int val = digitalRead(ENC_IN_RIGHT_B);
 
-#if REVERSE_DIR == 1
-  if (val == HIGH) {
-#else
   if (val == LOW) {
-#endif
     Direction_right = false;  // Reverse
   } else {
     Direction_right = true;  // Forward
@@ -192,11 +210,7 @@ void left_wheel_tick() {
   // Read the value for the encoder for the left wheel
   int val = digitalRead(ENC_IN_LEFT_B);
 
-#if REVERSE_DIR == 1
-  if (val == LOW) {
-#else
   if (val == HIGH) {
-#endif
     Direction_left = true;  // Reverse
   } else {
     Direction_left = false;  // Forward
@@ -218,8 +232,6 @@ void left_wheel_tick() {
 }
 
 /////////////////////// Motor Controller Functions ////////////////////////////
-
-#if CAL_VEL == 1
 // Calculate the left wheel linear velocity in m/s every time a
 // tick count message is rpublished on the /left_ticks topic.
 void calc_vel_left_wheel() {
@@ -234,12 +246,15 @@ void calc_vel_left_wheel() {
   int numOfTicks = (65535 + left_wheel_tick_count.data - prevLeftCount) % 65535;
 
   // If we have had a big jump, it means the tick count has rolled over.
-  if (numOfTicks > 10000) {
+  if (numOfTicks > 30000) {
     numOfTicks = 0 - (65535 - numOfTicks);
   }
 
   // Calculate wheel velocity in meters per second
   velLeftWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
+#if PUB_VEL == 1
+  left_vel_pub.data = velLeftWheel;
+#endif
   // Keep track of the previous tick count
   prevLeftCount = left_wheel_tick_count.data;
 
@@ -260,46 +275,48 @@ void calc_vel_right_wheel() {
   // Manage rollover and rollunder when we get outside the 16-bit integer range
   int numOfTicks = (65535 + right_wheel_tick_count.data - prevRightCount) % 65535;
 
-  if (numOfTicks > 10000) {
+  if (numOfTicks > 30000) {
     numOfTicks = 0 - (65535 - numOfTicks);
   }
 
   // Calculate wheel velocity in meters per second
   velRightWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
+#if PUB_VEL == 1
+  right_vel_pub.data = velRightWheel;
+#endif
   prevRightCount = right_wheel_tick_count.data;
 
+  // Update the timestamp
   prevTime = (millis() / 1000.0);
 }
-#endif
 
-#if FIXV_ROTATE == 1
+#if VleftVRight == 0
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
 
   // Record timestamp of last velocity command received
   lastCmdVelReceived = (millis() / 1000.0);
+
   if (cmdVel.linear.x >= 0.0) {
     // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * cmdVel.linear.x + K_b;
+    pwmLeftReq = K_P * cmdVel.linear.x + K_b + K_bias;
     pwmRightReq = K_P * cmdVel.linear.x + K_b;
   } else {
-    pwmLeftReq = K_P * cmdVel.linear.x - K_b;
+    pwmLeftReq = K_P * cmdVel.linear.x - K_b - K_bias;
     pwmRightReq = K_P * cmdVel.linear.x - K_b;
   }
 
-  // Check if we need to turn
-  if (cmdVel.angular.z != 0.0) {
-    // Turn left
-    if (cmdVel.angular.z > 0.0) {
-      pwmLeftReq = -PWM_TURN;
-      pwmRightReq = PWM_TURN;
-    }
-    // Turn right
-    else {
-      pwmLeftReq = PWM_TURN;
-      pwmRightReq = -PWM_TURN;
-    }
+  // Turn left
+  if (cmdVel.angular.z > 0.1) {
+    pwmLeftReq = -PWM_TURN;
+    pwmRightReq = PWM_TURN;
   }
+  // Turn right
+  else if (cmdVel.angular.z < -0.1) {
+    pwmLeftReq = PWM_TURN;
+    pwmRightReq = -PWM_TURN;
+  }
+
   // Go straight
   else {
 
@@ -325,43 +342,27 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
     pwmRightReq = 0;
   }
 }
-#else
+#else //VleftVRight
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   float vLeft, vRight;
 
   // Record timestamp of last velocity command received
   lastCmdVelReceived = (millis() / 1000.0);
-  vLeft = (2.0 * cmdVel.linear.x - cmdVel.angular.z * WHEEL_WIDTH) / WHEEL_DIA;
-  vRight = (2.0 * cmdVel.linear.x + cmdVel.angular.z * WHEEL_WIDTH) / WHEEL_DIA;
 
+  vLeft = (2.0 * cmdVel.linear.x - cmdVel.angular.z * WHEEL_BASE) / 2.0;
+  vRight = (2.0 * cmdVel.linear.x + cmdVel.angular.z * WHEEL_BASE) / 2.0;
   if (vLeft >= 0.0) {
     // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * vLeft + K_b;
+    pwmLeftReq = int(K_P * vLeft + K_b + K_bias);
   } else {
-    pwmLeftReq = K_P * vLeft - K_b;
+    pwmLeftReq = int(K_P * vLeft - K_b - K_bias);
   }
   if (vRight >= 0.0) {
     // Calculate the PWM value given the desired velocity
     pwmRightReq = K_P * vRight + K_b;
   } else {
     pwmRightReq = K_P * vRight - K_b;
-  }
-
-  // go Straied
-  if (cmdVel.angular.z == 0.0) {
-    // Remove any differences in wheel velocities
-    // to make sure the robot goes straight
-    static float prevDiff = 0.0;
-    static float prevPrevDiff = 0.0;
-    float currDifference = velLeftWheel - velRightWheel;
-    float avgDifference = (prevDiff + prevPrevDiff + currDifference) / 3.0;
-    prevPrevDiff = prevDiff;
-    prevDiff = currDifference;
-
-    // Correct PWM values of both wheels to make the vehicle go straight
-    pwmLeftReq -= (avgDifference * DRIFT_MULTIPLIER);
-    pwmRightReq += (avgDifference * DRIFT_MULTIPLIER);
   }
 
   // Handle low PWM values
@@ -371,8 +372,21 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   if (abs(pwmRightReq) < PWM_MIN) {
     pwmRightReq = 0;
   }
+
+#if USE_PID == 1
+  //reset and start again PID controller
+  trackPIDLeft.SetMode(MANUAL);
+  trackAdjustValueL = 0.0;
+  trackErrorL = 0.0;
+  trackPIDLeft.SetMode(AUTOMATIC);
+
+  trackPIDRight.SetMode(MANUAL);
+  trackAdjustValueR = 0.0;
+  trackErrorR = 0.0;
+  trackPIDRight.SetMode(AUTOMATIC);
+#endif //USE_PID
 }
-#endif
+#endif //VleftVRight
 
 void set_pwm_values() {
 
@@ -417,20 +431,22 @@ void set_pwm_values() {
     digitalWrite(in4, LOW);
   }
 
-  // Increase the required PWM if the robot is not moving
-  if (pwmLeftReq != 0 && velLeftWheel == 0) {
-    pwmLeftReq *= 1.4;
-  }
-  if (pwmRightReq != 0 && velRightWheel == 0) {
-    pwmRightReq *= 1.4;
-  }
-
   // Calculate the output PWM value by making slow changes to the current value
   if (abs(pwmLeftReq) > pwmLeftOut) {
     pwmLeftOut += PWM_INCREMENT;
   } else if (abs(pwmLeftReq) < pwmLeftOut) {
     pwmLeftOut -= PWM_INCREMENT;
+
   } else {
+    // reached calculated PWM, then start PID
+#if USE_PID == 1
+    // not stop case, run PID
+    if (pwmLeftReq != 0) {
+      trackErrorL = (velLeftWheel - vLeft) * 100.0;
+      if (trackPIDLeft.Compute())  //true if PID has triggered
+        pwmLeftOut += trackAdjustValueL;
+    }
+#endif
   }
 
   if (abs(pwmRightReq) > pwmRightOut) {
@@ -438,6 +454,14 @@ void set_pwm_values() {
   } else if (abs(pwmRightReq) < pwmRightOut) {
     pwmRightOut -= PWM_INCREMENT;
   } else {
+    // reached calculated PWM, then start PID
+#if USE_PID == 1
+    if (pwmRightReq != 0) {
+      trackErrorR = (velRightWheel - vRight) * 100.0;
+      if (trackPIDRight.Compute())  //true if PID has triggered
+        pwmRightOut += trackAdjustValueR;
+    }
+#endif
   }
 
   // Conditional operator to limit PWM output at the maximum
@@ -453,6 +477,7 @@ void set_pwm_values() {
   analogWrite(enB, pwmRightOut);
 }
 
+#if USE_LED == 1
 void RGB(enum COLOR color) {
   switch (color) {
     case RED:
@@ -501,10 +526,13 @@ void RGB(enum COLOR color) {
 void ledcb(const std_msgs::Int16& msg) {
   RGB(msg.data);  // set the pin state to the message data
 }
+#endif
 
 // Set up ROS subscriber to the velocity command
 ros::Subscriber<geometry_msgs::Twist> subCmdVel("cmd_vel", &calc_pwm_values);
+#if USE_LED == 1
 ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
+#endif
 
 void setup() {
 #if PWM_PARAM == 1
@@ -546,10 +574,12 @@ void setup() {
   analogWrite(enA, 0);
   analogWrite(enB, 0);
 
+#if USE_LED == 1
   pinMode(RLED, OUTPUT);  // RGB color lights red control pin configuration output
   pinMode(GLED, OUTPUT);  // RGB color light green control pin configuration output
   pinMode(BLED, OUTPUT);  // RGB color light blue control pin configuration output
   RGB(100);               // RGB LED all off
+#endif
 
   // configure LED for output
   pinMode(LED_BUILTIN, OUTPUT);
@@ -560,7 +590,14 @@ void setup() {
   nh.advertise(rightPub);
   nh.advertise(leftPub);
   nh.subscribe(subCmdVel);
+#if PUB_VEL == 1
+  nh.advertise(rightvelPub);
+  nh.advertise(leftvelPub);
+#endif
+
+#if USE_LED == 1
   nh.subscribe(subLed);
+#endif
   while (!nh.connected()) {
     nh.spinOnce();
   }
@@ -587,6 +624,15 @@ void setup() {
     nh.logwarn(buf);
   }
 #endif
+
+#if USE_PID == 1
+  trackPIDLeft.SetMode(AUTOMATIC);
+  trackPIDLeft.SetSampleTime(200);
+  trackPIDLeft.SetOutputLimits(-20, 20);
+  trackPIDRight.SetMode(AUTOMATIC);
+  trackPIDRight.SetSampleTime(200);
+  trackPIDRight.SetOutputLimits(-20, 20);
+#endif
 }
 
 void loop() {
@@ -599,18 +645,18 @@ void loop() {
   // If the time interval has passed, publish the number of ticks,
   // and calculate the velocities.
   if (currentMillis - previousMillis > interval) {
-
     previousMillis = currentMillis;
 
     // Publish tick counts to topics
     leftPub.publish(&left_wheel_tick_count);
     rightPub.publish(&right_wheel_tick_count);
-
-#if CAL_VEL == 1
+#if PUB_VEL == 1
+    leftvelPub.publish(&left_vel_pub);
+    rightvelPub.publish(&right_vel_pub);
+#endif
     // Calculate the velocity of the right and left wheels
     calc_vel_right_wheel();
     calc_vel_left_wheel();
-#endif
 
     // blink LED to indicate activity
     blinkState = !blinkState;
