@@ -1,7 +1,7 @@
 <launch>
 <!-- Initial Pose and Goal Publisher -->
 <!-- Publish: /initialpose, /move_base_simple/goal -->
-  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find jessicar2_navigation)/maps/floorplan4.rviz">
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find jessicar2_navigation)/maps/jessicar2Map.rviz">
   </node> 
 
 </launch>

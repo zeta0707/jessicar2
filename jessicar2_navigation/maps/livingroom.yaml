@@ -1,4 +1,4 @@
-image: zetaroom1.pgm
+image: /home/jetson/catkin_ws/src/jessicar2/jessicar2_navigation/maps/livingroom.pgm
 resolution: 0.050000
 origin: [-25.624998, -25.624998, 0.000000]
 negate: 0

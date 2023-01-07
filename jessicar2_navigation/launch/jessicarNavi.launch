@@ -40,7 +40,7 @@
   <include file="$(find amcl)/examples/amcl_diff.launch"/>
 
   <!-- Map File -->
-  <arg name="map_file" default="$(find jessicar2_navigation)/maps/zetaroom2.yaml"/>
+  <arg name="map_file" default="$(find jessicar2_navigation)/maps/livingroom.yaml"/>
 
   <!-- Map Server -->
   <!-- Publish: /map, /map_metadata -->
