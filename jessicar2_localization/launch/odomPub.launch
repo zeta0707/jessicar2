@@ -18,6 +18,7 @@
   <!-- Subscribe: /right_ticks, /left_ticks, /initial_2d -->
   <!-- Publish: /odom_data_euler, /odom_data_quat -->
   <node pkg="jessicar2_localization" type="odom_pub" name="odom_pub">
+      <param name="initialPoseRecieved" type="bool" value="true" />
   </node>
    
 </launch>

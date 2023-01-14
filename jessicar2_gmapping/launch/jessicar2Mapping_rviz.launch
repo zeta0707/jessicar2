@@ -1,6 +1,0 @@
-<launch>
-<!-- Initial Pose and Goal Publisher -->
-<!-- Publish: /initialpose, /move_base_simple/goal -->
-  <node pkg="rviz" type="rviz" name="rviz" required="true" args="-d $(find jessicar2_gmapping)/rviz/jessicar2_gmapping.rviz"/>
-
-</launch>

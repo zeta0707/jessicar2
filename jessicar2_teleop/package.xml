@@ -9,6 +9,8 @@
   <buildtool_depend>catkin</buildtool_depend>
   <author email="pinkwink@omorobot.com">PinkWink</author>
   <maintainer email="kyuhyong@omorobot.com">Kyuhyong</maintainer>
+  <maintainer email="zeta0707@gmail.com">zeta</maintainer>
+
   <depend>rospy</depend>
   <depend>geometry_msgs</depend>
   <depend>sensor_msgs</depend>

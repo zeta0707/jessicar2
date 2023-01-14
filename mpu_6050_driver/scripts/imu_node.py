@@ -5,7 +5,8 @@ import smbus
 import struct
 import rospy
 import numpy as np
-from sensor_msgs.msg import Temperature, Imu
+from sensor_msgs.msg import Imu
+#from sensor_msgs.msg import Temperature, Imu
 from tf.transformations import quaternion_about_axis
 from mpu_6050_driver.registers import PWR_MGMT_1, ACCEL_XOUT_H, ACCEL_YOUT_H, ACCEL_ZOUT_H, TEMP_H,\
     GYRO_XOUT_H, GYRO_YOUT_H, GYRO_ZOUT_H
@@ -30,12 +31,12 @@ def read_word_2c(adr):
     else:
         return val
 
-def publish_temp(timer_event):
-    temp_msg = Temperature()
-    temp_msg.header.frame_id = IMU_FRAME
-    temp_msg.temperature = read_word_2c(TEMP_H)/340.0 + 36.53
-    temp_msg.header.stamp = rospy.Time.now()
-    temp_pub.publish(temp_msg)
+#def publish_temp(timer_event):
+#    temp_msg = Temperature()
+#    temp_msg.header.frame_id = IMU_FRAME
+#    temp_msg.temperature = read_word_2c(TEMP_H)/340.0 + 36.53
+#    temp_msg.header.stamp = rospy.Time.now()
+#    temp_pub.publish(temp_msg)
 
 
 def publish_imu(timer_event):
@@ -77,7 +78,7 @@ def publish_imu(timer_event):
     imu_pub.publish(imu_msg)
 
 
-temp_pub = None
+#temp_pub = None
 imu_pub = None
 
 if __name__ == '__main__':
@@ -92,8 +93,8 @@ if __name__ == '__main__':
 
     bus.write_byte_data(ADDR, PWR_MGMT_1, 0)
 
-    temp_pub = rospy.Publisher('temperature', Temperature,queue_size=10)
+    #temp_pub = rospy.Publisher('temperature', Temperature,queue_size=10)
     imu_pub = rospy.Publisher('imu/data', Imu,queue_size=10)
     imu_timer = rospy.Timer(rospy.Duration(0.02), publish_imu)
-    temp_timer = rospy.Timer(rospy.Duration(10), publish_temp)
+    #temp_timer = rospy.Timer(rospy.Duration(10), publish_temp)
     rospy.spin()

@@ -52,8 +52,8 @@ const double TICKS_PER_REVOLUTION = 102.0; // For reference purposes.
 const double TICKS_PER_REVOLUTION = 1860.0; // For reference purposes.
 #endif
 const double WHEEL_RADIUS = 0.033; // Wheel radius in meters
-const double WHEEL_BASE = 0.15; // Center of left tire to center of right tire
-const double TICKS_PER_METER = (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS));
+const double WHEEL_BASE = 0.160; // Center of left tire to center of right tire
+const double TICKS_PER_METER = TICKS_PER_REVOLUTION / (2.0 * 3.141592654 * WHEEL_RADIUS);
 
 // Distance both wheels have traveled
 double distanceLeft = 0;
