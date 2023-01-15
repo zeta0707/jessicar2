@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <arg name="model" default="$(find jessicar2_description)/urdf/mobile_robot.urdf.xacro"/>
+  <arg name="gui" default="true" />
+  
+  <param name="robot_description" command="$(find xacro)/xacro $(arg model)" />
+  <!--<param name="use_gui" value="$(arg gui)" /> -->
+  
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+  </node>
+
+</launch>

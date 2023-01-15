@@ -5,11 +5,10 @@ Panels:
     Property Tree Widget:
       Expanded:
         - /Global Options1
-        - /Path1
+        - /Axes1
         - /Path1/Offset1
-        - /TF1
         - /TF1/Frames1
-        - /Polygon1
+        - /RobotModel1
       Splitter Ratio: 0.5
     Tree Height: 765
   - Class: rviz/Selection
@@ -30,7 +29,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: LaserScan
 Preferences:
   PromptSaveOnExit: true
 Toolbars:
@@ -68,7 +67,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Axes
       Enabled: true
-      Length: 1
+      Length: 0.20000000298023224
       Name: Axes
       Radius: 0.10000000149011612
       Reference Frame: <Fixed Frame>
@@ -122,9 +121,9 @@ Visualization Manager:
       Frames:
         All Enabled: false
         base_footprint:
-          Value: true
-        base_link:
           Value: false
+        base_link:
+          Value: true
         imu_link:
           Value: false
         laser_link:
@@ -133,7 +132,7 @@ Visualization Manager:
           Value: false
         odom:
           Value: false
-      Marker Scale: 3
+      Marker Scale: 2
       Name: TF
       Show Arrows: false
       Show Axes: true
@@ -150,13 +149,59 @@ Visualization Manager:
       Update Interval: 0
       Value: true
     - Alpha: 1
-      Class: rviz/Polygon
-      Color: 25; 255; 0
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
       Enabled: true
-      Name: Polygon
-      Topic: /move_base/global_costmap/footprint
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Min Color: 0; 0; 0
+      Name: LaserScan
+      Position Transformer: XYZ
+      Queue Size: 10
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.009999999776482582
+      Style: Flat Squares
+      Topic: /scan
       Unreliable: false
+      Use Fixed Frame: true
+      Use rainbow: true
       Value: true
+    - Alpha: 1
+      Class: rviz/RobotModel
+      Collision Enabled: false
+      Enabled: true
+      Links:
+        All Links Enabled: true
+        Expand Joint Details: false
+        Expand Link Details: false
+        Expand Tree: false
+        Link Tree Style: Links in Alphabetic Order
+        base_footprint:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        base_link:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+      Name: RobotModel
+      Robot Description: robot_description
+      TF Prefix: ""
+      Update Interval: 0
+      Value: true
+      Visual Enabled: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -185,16 +230,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 14.215984344482422
+      Distance: 8.985699653625488
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.723240613937378
-        Y: 3.351252794265747
-        Z: 0.7208453416824341
+        X: 1.627420425415039
+        Y: -0.1263849288225174
+        Z: 0.4404618442058563
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -221,5 +266,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1493
-  X: 273
-  Y: 135
+  X: 218
+  Y: 143

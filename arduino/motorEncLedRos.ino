@@ -34,9 +34,9 @@ double trackAdjustValueR = 0.0;
 double trackSetpointR = 0.0;
 double trackErrorR = 0.0;
 
-double Kp = 4.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
-double Ki = 2.0;  //Determines how aggressively the PID reacts to error over time (Integral)
-double Kd = 1.0;  //Determines how aggressively the PID reacts to the change in error (Derivative)
+double Kp = 20.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
+double Ki = 20.0;  //Determines how aggressively the PID reacts to error over time (Integral)
+double Kd = 1.0;   //Determines how aggressively the PID reacts to the change in error (Derivative)
 
 PID trackPIDLeft(&trackErrorL, &trackAdjustValueL, &trackSetpointL, Kp, Ki, Kd, DIRECT);
 PID trackPIDRight(&trackErrorR, &trackAdjustValueR, &trackSetpointR, Kp, Ki, Kd, DIRECT);
@@ -126,7 +126,7 @@ const int in4 = 6;
 #endif
 
 #define TICKS_PER_METER (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS))
-#define WHEEL_BASE (0.140)
+#define WHEEL_BASE (0.160)
 
 #if PWM_PARAM == 1
 // Proportional constant, which was measured by measuring the
@@ -143,7 +143,7 @@ int PWM_MAX = 80;  // about x.xxx m/s
 #if MOTORTYPE == JGB520
 #define K_P 1125.0
 #define K_b 3.5
-#define PWM_MIN 60.0   // about 0.05 m/s
+#define PWM_MIN 40.0   // about 0.05 m/s
 #define PWM_MAX 240.0  // about 0.2 m/s
 #define K_bias 5.0     // left is slow, then add this bias
 #else
@@ -342,7 +342,7 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
     pwmRightReq = 0;
   }
 }
-#else //VleftVRight
+#else  //VleftVRight
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   float vLeft, vRight;
@@ -350,8 +350,9 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   // Record timestamp of last velocity command received
   lastCmdVelReceived = (millis() / 1000.0);
 
-  vLeft = (2.0 * cmdVel.linear.x - cmdVel.angular.z * WHEEL_BASE) / 2.0;
-  vRight = (2.0 * cmdVel.linear.x + cmdVel.angular.z * WHEEL_BASE) / 2.0;
+  vLeft = cmdVel.linear.x - cmdVel.angular.z * WHEEL_BASE / 2.0;
+  vRight = cmdVel.linear.x + cmdVel.angular.z * WHEEL_BASE / 2.0;
+
   if (vLeft >= 0.0) {
     // Calculate the PWM value given the desired velocity
     pwmLeftReq = int(K_P * vLeft + K_b + K_bias);
@@ -384,9 +385,9 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   trackAdjustValueR = 0.0;
   trackErrorR = 0.0;
   trackPIDRight.SetMode(AUTOMATIC);
-#endif //USE_PID
+#endif  //USE_PID
 }
-#endif //VleftVRight
+#endif  //VleftVRight
 
 void set_pwm_values() {
 

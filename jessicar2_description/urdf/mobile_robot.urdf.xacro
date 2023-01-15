@@ -17,17 +17,15 @@
         <color rgba="0.0 0.8 0.0 1.0"/>
     </material>
 
-    <link name="base_link">
-        <!--<visual>
-          <geometry>
-             <box size="0.24 0.24 0.001"/>
-          </geometry>
-          <material name="white"/>
-          <origin rpy="0 0 0" xyz="0 0 0.0005"/>
-          <material>
-            <color rgba="0 0 0.8 1" />
-          </material>
-        </visual> -->
+    <material name="orange">
+      <color rgba="${255/255} ${108/255} ${10/255} 1.0"/>
+    </material>
+
+    <material name="dark_orange">
+      <color rgba="${255/255} ${90/255} ${5/255} 1.0"/>
+    </material>
+
+    <link name="base_footprint">
         <collision>
           <origin rpy="0 0 0" xyz="0 0 0.0005"/>
           <geometry>
@@ -37,94 +35,25 @@
     </link>
 
     <joint name="base_link_joint" type="fixed">
-        <origin xyz="0 0 0.026" rpy="0 0 -1.5708" />
-        <parent link="base_link" />
-        <child link="base_plate" />
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <parent link="base_footprint" />
+        <child link="base_link" />
     </joint>
 
-    <link name="base_plate">
+    <link name="base_link">
     <visual>
-      <origin rpy="0 0 0" xyz="0.03 0 -0.026"/>
+      <origin rpy="1.57 0 3.14" xyz="0.13 -0.13 -0.17 "/>
       <geometry>
-        <mesh filename="package://jessicar2_description/stl/Chasis.stl" scale="0.001 0.001 0.001"/> 
+        <mesh filename="package://jessicar2_description/stl/total.stl" scale="0.001 0.001 0.001"/> 
       </geometry>
-      <material name="white"/>
+      <material name="orange"/>
     </visual>
     <collision>
-      <origin rpy="0 0 0" xyz="0.03 0 -0.026"  />
+      <origin rpy="1.57 0 3.14" xyz="0.13 -0.13 -0.17" />
       <geometry>
-        <mesh filename="package://jessicar2_description/stl/Chasis.stl" scale="0.001 0.001 0.001" />
+        <mesh filename="package://jessicar2_description/stl/total.stl" scale="0.001 0.001 0.001" />
       </geometry>
     </collision>
     </link>   
-    
-    
-    <joint name="right_wheel_joint" type="continuous">
-        <origin xyz="-0.08 -0.06 0.015" rpy="0 0 0" />
-        <parent link="base_plate" />
-        <child link="right_wheel" />
-        <axis xyz="-1 0 0" />
-    </joint>
-
-    <link name="right_wheel">
-    <visual>
-      <origin rpy="0 0 0" xyz="0.11 0.059 -0.04"/>
-      <geometry>
-        <mesh filename="package://jessicar2_description/stl/Wheel.stl" scale="0.001 0.001 0.001"/> 
-      </geometry>
-      <material name="black"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.11 0.059 -0.04"/>
-      <geometry>
-        <mesh filename="package://jessicar2_description/stl/Wheel.stl" scale="0.001 0.001 0.001" />
-      </geometry>
-    </collision>
-    </link>   
-    
-    <joint name="left_wheel_joint" type="continuous">
-        <origin xyz="0.08 -0.06 0.015" rpy="0 0 0" />
-        <parent link="base_plate" />
-        <child link="left_wheel" />
-        <axis xyz="-1 0 0" />
-    </joint>
-
-    <link name="left_wheel">
-    <visual>
-      <origin rpy="0 0 0" xyz="0.133 0.059 -0.04"/>
-      <geometry>
-        <mesh filename="package://jessicar2_description/stl/Wheel.stl" scale="0.001 0.001 0.001"/> 
-      </geometry>
-      <material name="black"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.133 0.059 -0.04"/>
-      <geometry>
-        <mesh filename="package://jessicar2_description/stl/Wheel.stl" scale="0.001 0.001 0.001" />
-      </geometry>
-    </collision>
-    </link>   
-    
-    <joint name="laser_joint" type="fixed">
-        <origin xyz="0 0.040 0.090" rpy="0 0 1.5708" />
-        <parent link="base_plate" />
-        <child link="laser" />
-    </joint>
-
-    <link name="laser">
-    <visual>
-      <origin rpy="0 0 -1.5708" xyz="0.084 -0.242 -0.098"/>
-      <geometry>
-        <mesh filename="package://jessicar2_description/stl/RpLidar.stl" scale="0.001 0.001 0.001"/> 
-      </geometry>
-      <material name="blue"/>
-    </visual>
-    <collision>
-      <origin rpy="0 0 0" xyz="0.242 0.084 -0.098"  />
-      <geometry>
-        <mesh filename="package://jessicar2_description/stl/RpLidar.stl" scale="0.001 0.001 0.001" />
-      </geometry>
-    </collision>
-    </link>  
-    
+ 
 </robot>
