@@ -19,11 +19,11 @@
 #define PWM_PARAM 0
 #define PUB_VEL 0
 #define VleftVRight 1
-#define USE_LED 0
+#define USE_LED 1
 
 #define JGA25370 0
 #define JGB520 1
-#define MOTORTYPE JGB520
+#define MOTORTYPE JGA25370
 
 #define USE_PID 1
 #if USE_PID == 1
