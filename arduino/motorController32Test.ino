@@ -9,21 +9,12 @@
  * Reference: Practical Robotics in C++ book (ISBN-10 : 9389423465)
  * motor_controller_diff_drive_2.ino.
  */
-
 #include <ros.h>
 #include <std_msgs/Int16.h>
-#include <std_msgs/Float32.h>
 #include <geometry_msgs/Twist.h>
 #include <PID_v1.h>
 
-#define PWM_PARAM 0
-#define PUB_VEL 0
 #define VleftVRight 1
-#define USE_LED 1
-
-#define JGA25370 0
-#define JGB520 1
-#define MOTORTYPE JGB520
 
 #define USE_PID 1
 #if USE_PID == 1
@@ -35,23 +26,32 @@ double trackSetpointR = 0.0;
 double trackErrorR = 0.0;
 
 double Kp = 20.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
-double Ki = 20.0;  //Determines how aggressively the PID reacts to error over time (Integral)
+double Ki = 10.0;  //Determines how aggressively the PID reacts to error over time (Integral)
 double Kd = 1.0;   //Determines how aggressively the PID reacts to the change in error (Derivative)
 
 PID trackPIDLeft(&trackErrorL, &trackAdjustValueL, &trackSetpointL, Kp, Ki, Kd, DIRECT);
 PID trackPIDRight(&trackErrorR, &trackAdjustValueR, &trackSetpointR, Kp, Ki, Kd, DIRECT);
 #endif
 
-// Handles startup and shutdown of ROS
-ros::NodeHandle nh;
-
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
-#define ENC_IN_LEFT_A 2
-#define ENC_IN_RIGHT_A 3
+#define ENC_IN_LEFT_A 36
+#define ENC_IN_RIGHT_A 39
 // Other encoder output to Arduino to keep track of wheel direction
 // Tracks the direction of rotation.
-#define ENC_IN_LEFT_B 5
-#define ENC_IN_RIGHT_B 4
+#define ENC_IN_LEFT_B 34
+#define ENC_IN_RIGHT_B 35
+
+// Motor A connections, Left
+#define enA 32
+// Motor B connections, Right
+#define enB 33
+#define ENA_CH 0
+#define ENB_CH 1
+
+#define in1 25
+#define in2 26
+#define in3 27
+#define in4 14
 
 // True = Forward; False = Reverse
 boolean Direction_left = true;
@@ -62,54 +62,14 @@ boolean Direction_right = true;
 const int encoder_minimum = -32768;
 const int encoder_maximum = 32767;
 
-// RGB Color lamp control pin
-#define RLED A0
-#define GLED A1
-#define BLED A2
-
-/***********************Enumeration variable***********************/
-enum COLOR {
-  RED = 0,  // red
-  GREEN,    // green
-  BLUE,     // blue
-  YELLOW,   // yellow
-  PURPLE,   // purple
-  CYAN,     // cyan
-  WHITE,    // white
-  ALL_OFF   // off(black)
-};
-
-////////////////// Tick Data Publishing Variables and Constants ///////////////
 // Keep track of the number of wheel ticks
 std_msgs::Int16 right_wheel_tick_count;
-ros::Publisher rightPub("right_ticks", &right_wheel_tick_count);
 std_msgs::Int16 left_wheel_tick_count;
-ros::Publisher leftPub("left_ticks", &left_wheel_tick_count);
-
-#if PUB_VEL == 1
-std_msgs::Float32 left_vel_pub;
-ros::Publisher leftvelPub("velLeft", &left_vel_pub);
-std_msgs::Float32 right_vel_pub;
-ros::Publisher rightvelPub("velRight", &right_vel_pub);
-#endif
 
 // Time interval for measurements in milliseconds
-const int interval = 30;
+const int interval = 100;
 long previousMillis = 0;
 long currentMillis = 0;
-
-////////////////// Motor Controller Variables and Constants ///////////////////
-// Motor A connections, Left
-const int enA = 10;
-const int in1 = 12;
-const int in2 = 13;
-// Motor B connections, Right
-const int enB = 9;
-const int in3 = 7;
-const int in4 = 6;
-
-// TB6612 Chip control pins
-#define TB6612_STBY 8
 
 // Number of ticks per wheel revolution. We won't use this in this code.
 
@@ -119,42 +79,16 @@ const int in4 = 6;
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
-#if MOTORTYPE == JGB520
+
 #define TICKS_PER_REVOLUTION (1860.0)
-#else
-#define TICKS_PER_REVOLUTION (102.0)
-#endif
-
 #define TICKS_PER_METER (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS))
-#define WHEEL_BASE (0.160)
+#define WHEEL_BASE (0.140)
 
-#if PWM_PARAM == 1
-// Proportional constant, which was measured by measuring the
-// PWM-Linear Velocity relationship for the robot.
-int K_P = 75;
-// Y-intercept for the PWM-Linear Velocity relationship for the robot
-int K_b = 42;
-// Turning PWM output (0 = min, 255 = max for PWM values)
-// Set maximum and minimum limits for the PWM values
-int PWM_MIN = 50;  // about x.xxx m/s
-int PWM_MAX = 80;  // about x.xxx m/s
-#else
-
-#if MOTORTYPE == JGB520
 #define K_P 1125.0
 #define K_b 3.5
 #define PWM_MIN 40.0   // about 0.05 m/s
 #define PWM_MAX 240.0  // about 0.2 m/s
 #define K_bias 5.0     // left is slow, then add this bias
-#else
-#define K_P 125.0
-#define K_b 35.0
-#define PWM_MIN 40.0
-#define PWM_MAX 80.0
-#define K_bias 5.0
-#endif
-
-#endif
 
 #define PWM_TURN (PWM_MIN)
 // How much the PWM value can change each cycle
@@ -178,7 +112,7 @@ bool blinkState = false;
 /////////////////////// Tick Data Publishing Functions ////////////////////////
 
 // Increment the number of ticks
-void right_wheel_tick() {
+void IRAM_ATTR right_wheel_tick() {
 
   // Read the value for the encoder for the right wheel
   int val = digitalRead(ENC_IN_RIGHT_B);
@@ -206,12 +140,12 @@ void right_wheel_tick() {
 }
 
 // Increment the number of ticks
-void left_wheel_tick() {
+void IRAM_ATTR left_wheel_tick() {
 
   // Read the value for the encoder for the left wheel
   int val = digitalRead(ENC_IN_LEFT_B);
 
-  if (val == HIGH) {
+  if (val == LOW) {
     Direction_left = true;  // Reverse
   } else {
     Direction_left = false;  // Forward
@@ -253,14 +187,15 @@ void calc_vel_left_wheel() {
 
   // Calculate wheel velocity in meters per second
   velLeftWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
-#if PUB_VEL == 1
-  left_vel_pub.data = velLeftWheel;
-#endif
   // Keep track of the previous tick count
   prevLeftCount = left_wheel_tick_count.data;
 
   // Update the timestamp
   prevTime = (millis() / 1000.0);
+  Serial.print("L:");
+  Serial.print(velLeftWheel, 3);
+  Serial.print(", ");
+  Serial.println(numOfTicks);
 }
 
 // Calculate the right wheel linear velocity in m/s every time a
@@ -282,57 +217,39 @@ void calc_vel_right_wheel() {
 
   // Calculate wheel velocity in meters per second
   velRightWheel = float(numOfTicks) / TICKS_PER_METER / ((millis() / 1000.0) - prevTime);
-#if PUB_VEL == 1
-  right_vel_pub.data = velRightWheel;
-#endif
   prevRightCount = right_wheel_tick_count.data;
 
   // Update the timestamp
   prevTime = (millis() / 1000.0);
+
+  Serial.print("R:");
+  Serial.print(velRightWheel, 3);
+  Serial.print(", ");
+  Serial.println(numOfTicks);
 }
 
 #if VleftVRight == 0
 // Take the velocity command as input and calculate the PWM values.
-void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
+void calc_pwm_values(float linearx, float angularz) {
 
-  // Record timestamp of last velocity command received
-  lastCmdVelReceived = (millis() / 1000.0);
-
-  if (cmdVel.linear.x >= 0.0) {
+  if (linearx >= 0.0) {
     // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * cmdVel.linear.x + K_b + K_bias;
-    pwmRightReq = K_P * cmdVel.linear.x + K_b;
+    pwmLeftReq = int(K_P * linearx + K_b + K_bias);
+    pwmRightReq = int(K_P * linearx + K_b);
   } else {
-    pwmLeftReq = K_P * cmdVel.linear.x - K_b - K_bias;
-    pwmRightReq = K_P * cmdVel.linear.x - K_b;
+    pwmLeftReq = int(K_P * linearx - K_b - K_bias);
+    pwmRightReq = int(K_P * linearx - K_b);
   }
 
   // Turn left
-  if (cmdVel.angular.z > 0.1) {
+  if (angularz > 0.4) {
     pwmLeftReq = -PWM_TURN;
     pwmRightReq = PWM_TURN;
   }
   // Turn right
-  else if (cmdVel.angular.z < -0.1) {
+  else if (angularz < -0.4) {
     pwmLeftReq = PWM_TURN;
     pwmRightReq = -PWM_TURN;
-  }
-
-  // Go straight
-  else {
-
-    // Remove any differences in wheel velocities
-    // to make sure the robot goes straight
-    static float prevDiff = 0.0;
-    static float prevPrevDiff = 0.0;
-    float currDifference = velLeftWheel - velRightWheel;
-    float avgDifference = (prevDiff + prevPrevDiff + currDifference) / 3.0;
-    prevPrevDiff = prevDiff;
-    prevDiff = currDifference;
-
-    // Correct PWM values of both wheels to make the vehicle go straight
-    pwmLeftReq -= (avgDifference * DRIFT_MULTIPLIER);
-    pwmRightReq += (avgDifference * DRIFT_MULTIPLIER);
   }
 
   // Handle low PWM values
@@ -342,17 +259,12 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   if (abs(pwmRightReq) < PWM_MIN) {
     pwmRightReq = 0;
   }
-}
-#else  //VleftVRight
+#else
 // Take the velocity command as input and calculate the PWM values.
-void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
-  float vLeft, vRight;
+void calc_pwm_values(float linearx, float angularz) {
 
-  // Record timestamp of last velocity command received
-  lastCmdVelReceived = (millis() / 1000.0);
-
-  vLeft = cmdVel.linear.x - cmdVel.angular.z * WHEEL_BASE / 2.0;
-  vRight = cmdVel.linear.x + cmdVel.angular.z * WHEEL_BASE / 2.0;
+  vLeft = linearx - angularz * WHEEL_BASE / 2.0;
+  vRight = linearx + angularz * WHEEL_BASE / 2.0;
 
   if (vLeft >= 0.0) {
     // Calculate the PWM value given the desired velocity
@@ -374,6 +286,7 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   if (abs(pwmRightReq) < PWM_MIN) {
     pwmRightReq = 0;
   }
+#endif
 
 #if USE_PID == 1
   //reset and start again PID controller
@@ -386,9 +299,13 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   trackAdjustValueR = 0.0;
   trackErrorR = 0.0;
   trackPIDRight.SetMode(AUTOMATIC);
-#endif  //USE_PID
+#endif
+
+  Serial.print("cPWM:");
+  Serial.print(pwmLeftReq);
+  Serial.print(":");
+  Serial.println(pwmRightReq);
 }
-#endif  //VleftVRight
 
 void set_pwm_values() {
 
@@ -399,10 +316,6 @@ void set_pwm_values() {
   // If the required PWM is of opposite sign as the output PWM, we want to
   // stop the car before switching direction
   static bool stopped = false;
-  if (((pwmLeftReq * velLeftWheel < 0) && (pwmLeftOut != 0)) || ((pwmRightReq * velRightWheel < 0) && (pwmRightOut != 0))) {
-    pwmLeftReq = 0;
-    pwmRightReq = 0;
-  }
 
   // Set the direction of the motors
   if (pwmLeftReq > 0) {  // Left wheel forward
@@ -432,6 +345,11 @@ void set_pwm_values() {
     digitalWrite(in3, LOW);
     digitalWrite(in4, LOW);
   }
+
+  Serial.print("sReq:");
+  Serial.print(pwmLeftReq);
+  Serial.print(":");
+  Serial.println(pwmRightReq);
 
   // Calculate the output PWM value by making slow changes to the current value
   if (abs(pwmLeftReq) > pwmLeftOut) {
@@ -470,77 +388,31 @@ void set_pwm_values() {
   pwmLeftOut = (pwmLeftOut > PWM_MAX) ? PWM_MAX : pwmLeftOut;
   pwmRightOut = (pwmRightOut > PWM_MAX) ? PWM_MAX : pwmRightOut;
 
+  Serial.print("sOut:");
+  Serial.print(pwmLeftOut);
+  Serial.print(":");
+  Serial.println(pwmRightOut);
+
+#if USE_PID == 1
+  Serial.print("sErr:");
+  Serial.print(trackErrorL, 3);
+  Serial.print(":");
+  Serial.println(trackErrorR, 3);
+#endif
+
   // PWM output cannot be less than 0
   pwmLeftOut = (pwmLeftOut < 0) ? 0 : pwmLeftOut;
   pwmRightOut = (pwmRightOut < 0) ? 0 : pwmRightOut;
 
   // Set the PWM value on the pins
-  analogWrite(enA, pwmLeftOut);
-  analogWrite(enB, pwmRightOut);
+  ledcWrite(ENA_CH, pwmLeftOut);
+  ledcWrite(ENB_CH, pwmRightOut);
 }
-
-#if USE_LED == 1
-void RGB(enum COLOR color) {
-  switch (color) {
-    case RED:
-      digitalWrite(RLED, LOW);
-      digitalWrite(GLED, HIGH);
-      digitalWrite(BLED, HIGH);
-      break;
-    case GREEN:
-      digitalWrite(RLED, HIGH);
-      digitalWrite(GLED, LOW);
-      digitalWrite(BLED, HIGH);
-      break;
-    case BLUE:
-      digitalWrite(RLED, HIGH);
-      digitalWrite(GLED, HIGH);
-      digitalWrite(BLED, LOW);
-      break;
-    case YELLOW:
-      digitalWrite(RLED, LOW);
-      digitalWrite(GLED, LOW);
-      digitalWrite(BLED, HIGH);
-      break;
-    case PURPLE:
-      digitalWrite(RLED, LOW);
-      digitalWrite(GLED, HIGH);
-      digitalWrite(BLED, LOW);
-      break;
-    case CYAN:
-      digitalWrite(RLED, HIGH);
-      digitalWrite(GLED, LOW);
-      digitalWrite(BLED, LOW);
-      break;
-    case WHITE:
-      digitalWrite(RLED, LOW);
-      digitalWrite(GLED, LOW);
-      digitalWrite(BLED, LOW);
-      break;
-    default:
-      digitalWrite(RLED, HIGH);
-      digitalWrite(GLED, HIGH);
-      digitalWrite(BLED, HIGH);
-      break;
-  }
-}
-
-void ledcb(const std_msgs::Int16& msg) {
-  RGB(msg.data);  // set the pin state to the message data
-}
-#endif
-
-// Set up ROS subscriber to the velocity command
-ros::Subscriber<geometry_msgs::Twist> subCmdVel("cmd_vel", &calc_pwm_values);
-#if USE_LED == 1
-ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
-#endif
 
 void setup() {
-#if PWM_PARAM == 1
-  int pwm_constants[4];
-  char buf[3];  //for debugging
-#endif
+
+  Serial.begin(115200);
+  Serial.println("Motor vel_cmd test");
 
   // Set pin states of the encoder
   pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
@@ -548,16 +420,10 @@ void setup() {
   pinMode(ENC_IN_RIGHT_A, INPUT_PULLUP);
   pinMode(ENC_IN_RIGHT_B, INPUT);
 
-  pinMode(A4, INPUT_PULLUP);
-  pinMode(A5, INPUT_PULLUP);
-
   // Every time the pin goes high, this is a tick
   attachInterrupt(digitalPinToInterrupt(ENC_IN_LEFT_A), left_wheel_tick, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_IN_RIGHT_A), right_wheel_tick, RISING);
 
-  // Motor control pins are outputs
-  pinMode(enA, OUTPUT);
-  pinMode(enB, OUTPUT);
   pinMode(in1, OUTPUT);
   pinMode(in2, OUTPUT);
   pinMode(in3, OUTPUT);
@@ -569,63 +435,15 @@ void setup() {
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 
-  pinMode(TB6612_STBY, OUTPUT);  // TB6612 Enable control pin configuration output
-  digitalWrite(TB6612_STBY, HIGH);
+  ledcSetup(ENA_CH, 5000, 8);  //enA, channel: 0, 5000Hz, 8bits = 256(0 ~ 255)
+  ledcSetup(ENB_CH, 5000, 8);  //enB, channel: 1, 5000Hz, 8bits = 256(0 ~ 255)
+
+  ledcAttachPin(enA, ENA_CH);
+  ledcAttachPin(enB, ENB_CH);
 
   // Set the motor speed
-  analogWrite(enA, 0);
-  analogWrite(enB, 0);
-
-#if USE_LED == 1
-  pinMode(RLED, OUTPUT);  // RGB color lights red control pin configuration output
-  pinMode(GLED, OUTPUT);  // RGB color light green control pin configuration output
-  pinMode(BLED, OUTPUT);  // RGB color light blue control pin configuration output
-  RGB(100);               // RGB LED all off
-#endif
-
-  // configure LED for output
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  // ROS Setup
-  nh.getHardware()->setBaud(115200);
-  nh.initNode();
-  nh.advertise(rightPub);
-  nh.advertise(leftPub);
-  nh.subscribe(subCmdVel);
-#if PUB_VEL == 1
-  nh.advertise(rightvelPub);
-  nh.advertise(leftvelPub);
-#endif
-
-#if USE_LED == 1
-  nh.subscribe(subLed);
-#endif
-  while (!nh.connected()) {
-    nh.spinOnce();
-  }
-
-#if PWM_PARAM == 1
-  nh.logwarn("S");
-  if (!nh.getParam("/pwmConstants", pwm_constants, 4)) {
-    nh.logwarn("F");
-
-  } else {
-    K_P = pwm_constants[0];
-    K_b = pwm_constants[1];
-    PWM_MIN = pwm_constants[2];
-    PWM_MAX = pwm_constants[3];
-
-    nh.logwarn("K");
-    sprintf(buf, "%d", pwm_constants[0]);
-    nh.logwarn(buf);
-    sprintf(buf, "%d", pwm_constants[1]);
-    nh.logwarn(buf);
-    sprintf(buf, "%d", pwm_constants[2]);
-    nh.logwarn(buf);
-    sprintf(buf, "%d", pwm_constants[3]);
-    nh.logwarn(buf);
-  }
-#endif
+  ledcWrite(ENA_CH, 0);
+  ledcWrite(ENB_CH, 0);
 
 #if USE_PID == 1
   trackPIDLeft.SetMode(AUTOMATIC);
@@ -638,38 +456,33 @@ void setup() {
 }
 
 void loop() {
-
-  nh.spinOnce();
+  float linearx, angularz;
 
   // Record the time
   currentMillis = millis();
+
+  //input like "0.15 -0.5"
+  if (Serial.available() > 0) {
+    linearx = Serial.parseFloat();
+    angularz = Serial.parseFloat();
+
+    //prints the received float number
+    Serial.println(linearx);
+    Serial.println(angularz);
+    calc_pwm_values(linearx, angularz);
+  }
 
   // If the time interval has passed, publish the number of ticks,
   // and calculate the velocities.
   if (currentMillis - previousMillis > interval) {
     previousMillis = currentMillis;
-
-    // Publish tick counts to topics
-    leftPub.publish(&left_wheel_tick_count);
-    rightPub.publish(&right_wheel_tick_count);
-#if PUB_VEL == 1
-    leftvelPub.publish(&left_vel_pub);
-    rightvelPub.publish(&right_vel_pub);
-#endif
-    // Calculate the velocity of the right and left wheels
-    calc_vel_right_wheel();
-    calc_vel_left_wheel();
-
     // blink LED to indicate activity
     blinkState = !blinkState;
     digitalWrite(LED_BUILTIN, blinkState);
-  }
 
-  // Stop the car if there are no cmd_vel messages
-  if ((millis() / 1000) - lastCmdVelReceived > 1) {
-    pwmLeftReq = 0;
-    pwmRightReq = 0;
+    // Calculate the velocity of the right and left wheels
+    calc_vel_right_wheel();
+    calc_vel_left_wheel();
+    set_pwm_values();
   }
-
-  set_pwm_values();
 }

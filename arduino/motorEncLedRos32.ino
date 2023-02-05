@@ -21,13 +21,30 @@
 #define SCREEN_WIDTH 128  // OLED width,  in pixels
 #define SCREEN_HEIGHT 64  // OLED height, in pixels
 
+#define RXD2 16
+#define TXD2 17
+
+#define DEBUG 1
+
+#if (DEBUG == 1)
+#define DEBUG_PRINT(x) Serial2.print(x)
+#define DEBUG_PRINTF(x, y) Serial2.print(x, y)
+#define DEBUG_PRINTLN(x) Serial2.println(x)
+#define DEBUG_PRINTLNF(x, y) Serial2.println(x, y)
+#else
+#define DEBUG_PRINT(x)
+#define DEBUG_PRINTF(x, y)
+#define DEBUG_PRINTLN(x)
+#define DEBUG_PRINTLNF(x, y)
+#endif
+
 // create an OLED display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
-#define PWM_PARAM 1
-#define PUB_VEL 1
+#define PWM_PARAM 0
+#define PUB_VEL 0
 #define VleftVRight 1
-#define USE_LED 0
+#define USE_LED 1
 
 #define USE_PID 1
 #if USE_PID == 1
@@ -50,12 +67,24 @@ PID trackPIDRight(&trackErrorR, &trackAdjustValueR, &trackSetpointR, Kp, Ki, Kd,
 ros::NodeHandle nh;
 
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
-#define ENC_IN_LEFT_A 25
-#define ENC_IN_RIGHT_A 14
+#define ENC_IN_LEFT_A 36
+#define ENC_IN_RIGHT_A 39
 // Other encoder output to Arduino to keep track of wheel direction
 // Tracks the direction of rotation.
-#define ENC_IN_LEFT_B 26
-#define ENC_IN_RIGHT_B 27
+#define ENC_IN_LEFT_B 34
+#define ENC_IN_RIGHT_B 35
+
+// Motor A connections, Left
+#define enA 32
+// Motor B connections, Right
+#define enB 33
+#define ENA_CH 0
+#define ENB_CH 1
+
+#define in1 25
+#define in2 26
+#define in3 27
+#define in4 14
 
 // True = Forward; False = Reverse
 boolean Direction_left = true;
@@ -67,10 +96,10 @@ const int encoder_minimum = -32768;
 const int encoder_maximum = 32767;
 
 // LED control pins
-#define LED_R 36
-#define LED_L 18
-#define LED_B 15
-#define BUZZER 12
+#define LED_L 19
+#define LED_R 18
+#define LED_B 5
+#define BUZZER 13
 
 /***********************Enumeration variable***********************/
 enum LEDBEHAV {
@@ -85,8 +114,8 @@ enum LEDBEHAV {
 ////////////////// Tick Data Publishing Variables and Constants ///////////////
 // Keep track of the number of wheel ticks
 std_msgs::Int16 right_wheel_tick_count;
-ros::Publisher rightPub("right_ticks", &right_wheel_tick_count);
 std_msgs::Int16 left_wheel_tick_count;
+ros::Publisher rightPub("right_ticks", &right_wheel_tick_count);
 ros::Publisher leftPub("left_ticks", &left_wheel_tick_count);
 
 #if PUB_VEL == 1
@@ -101,26 +130,13 @@ const int interval = 30;
 long previousMillis = 0;
 long currentMillis = 0;
 
-////////////////// Motor Controller Variables and Constants ///////////////////
-// Motor A connections, Left
-const int enA = 19;
-// Motor B connections, Right
-const int enB = 12;
-
-const int in1 = 32;
-const int in2 = 33;
-const int in3 = 34;
-const int in4 = 35;
-
 // Number of ticks per wheel revolution. We won't use this in this code.
-
 // Wheel radius in meters. We won't use this in this code.
 #define WHEEL_RADIUS (0.033)
 #define WHEEL_DIAMETER (WHEEL_RADIUS * 2)
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
-
 #define TICKS_PER_REVOLUTION (1860.0)
 #define TICKS_PER_METER (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS))
 #define WHEEL_BASE (0.160)
@@ -473,8 +489,8 @@ void set_pwm_values() {
   pwmRightOut = (pwmRightOut < 0) ? 0 : pwmRightOut;
 
   // Set the PWM value on the pins
-  ledcWrite(0, pwmLeftOut);
-  ledcWrite(1, pwmRightOut);
+  ledcWrite(ENA_CH, pwmLeftOut);
+  ledcWrite(ENB_CH, pwmRightOut);
 }
 
 void RGB(enum LEDBEHAV ledbehav) {
@@ -526,6 +542,12 @@ ros::Subscriber<geometry_msgs::Twist> subCmdVel("cmd_vel", &calc_pwm_values);
 ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
 
 void setup() {
+
+#if (DEBUG == 1)
+  Serial2.begin(115200);
+  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+#endif
+
 #if PWM_PARAM == 1
   int pwm_constants[4];
   char buf[3];  //for debugging
@@ -540,17 +562,9 @@ void setup() {
   pinMode(ENC_IN_RIGHT_A, INPUT_PULLUP);
   pinMode(ENC_IN_RIGHT_B, INPUT);
 
-  pinMode(A4, INPUT_PULLUP);
-  pinMode(A5, INPUT_PULLUP);
-
   // Every time the pin goes high, this is a tick
   attachInterrupt(digitalPinToInterrupt(ENC_IN_LEFT_A), left_wheel_tick, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_IN_RIGHT_A), right_wheel_tick, RISING);
-
-  ledcAttachPin(enA, 0);
-  ledcAttachPin(enB, 1);
-  ledcSetup(0, 5000, 8);  //enA, channel: 0, 5000Hz, 8bits = 256(0 ~ 255)
-  ledcSetup(1, 5000, 8);  //enB, channel: 1, 5000Hz, 8bits = 256(0 ~ 255)
 
   pinMode(in1, OUTPUT);
   pinMode(in2, OUTPUT);
@@ -563,22 +577,30 @@ void setup() {
   digitalWrite(in3, LOW);
   digitalWrite(in4, LOW);
 
+  ledcSetup(ENA_CH, 5000, 8);  //enA, channel: 0, 5000Hz, 8bits = 256(0 ~ 255)
+  ledcSetup(ENB_CH, 5000, 8);  //enB, channel: 1, 5000Hz, 8bits = 256(0 ~ 255)
+
+  ledcAttachPin(enA, ENA_CH);
+  ledcAttachPin(enB, ENB_CH);
+
   // Set the motor speed
-  ledcWrite(0, 0);
-  ledcWrite(1, 0);
+  ledcWrite(ENA_CH, 0);
+  ledcWrite(ENB_CH, 0);
 
 #if USE_LED == 1
-  pinMode(RLED, OUTPUT);  // RGB color lights red control pin configuration output
-  pinMode(GLED, OUTPUT);  // RGB color light green control pin configuration output
-  pinMode(BLED, OUTPUT);  // RGB color light blue control pin configuration output
-  RGB(100);               // RGB LED all off
+  pinMode(LED_L, OUTPUT);  // RGB color lights red control pin configuration output
+  pinMode(LED_R, OUTPUT);  // RGB color light green control pin configuration output
+  pinMode(LED_B, OUTPUT);  // RGB color light blue control pin configuration output
+  RGB(ALL_OFF);            // RGB LED all off
 #endif
 
   // configure LED for output
   pinMode(LED_BUILTIN, OUTPUT);
 
+  DEBUG_PRINTLN("ESP32 start");
+
   // ROS Setup
-  //nh.getHardware()->setBaud(115200);
+  nh.getHardware()->setBaud(115200);
   nh.initNode();
   nh.advertise(rightPub);
   nh.advertise(leftPub);
@@ -618,6 +640,13 @@ void setup() {
   }
 #endif
 
+  oled.clearDisplay();          // clear display
+  oled.setTextSize(1);          // set text size
+  oled.setTextColor(WHITE);     // set text color
+  oled.setCursor(0, 0);         // set position to display
+  oled.println("ESP32 Start");  // set text
+  oled.display();               // display on OLED
+
 #if USE_PID == 1
   trackPIDLeft.SetMode(AUTOMATIC);
   trackPIDLeft.SetSampleTime(200);
@@ -626,17 +655,9 @@ void setup() {
   trackPIDRight.SetSampleTime(200);
   trackPIDRight.SetOutputLimits(-20, 20);
 #endif
-
-  oled.clearDisplay();          // clear display
-  oled.setTextSize(1);          // set text size
-  oled.setTextColor(WHITE);     // set text color
-  oled.setCursor(0, 0);         // set position to display
-  oled.println("ESP32 Start");  // set text
-  oled.display();               // display on OLED
 }
 
 void loop() {
-
   nh.spinOnce();
 
   // Record the time
@@ -660,7 +681,7 @@ void loop() {
 
     // blink LED to indicate activity
     blinkState = !blinkState;
-    digitalWrite(LED_B, blinkState);
+    digitalWrite(LED_BUILTIN, blinkState);
   }
 
   // Stop the car if there are no cmd_vel messages
