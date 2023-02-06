@@ -19,7 +19,7 @@
 
 #define JGA25370 0
 #define JGB520 1
-#define MOTORTYPE JGA25370
+#define MOTORTYPE JGB520
 
 #define USE_PID 1
 #if USE_PID == 1

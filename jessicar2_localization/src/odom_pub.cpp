@@ -38,7 +38,11 @@ ros::Publisher odom_data_pub;
 ros::Publisher odom_data_pub_quat;
 nav_msgs::Odometry odomNew;
 nav_msgs::Odometry odomOld;
- 
+
+#define JGA25370 0
+#define JGB520 1
+#define MOTORTYPE JGB520
+
 // Initial pose
 const double initialX = 0.0;
 const double initialY = 0.0;
@@ -46,7 +50,7 @@ const double initialTheta = 0.00000000001;
 const double PI = 3.141592;
 
 // Robot physical constants
-#if 1
+#if MOTORTYPE == JGA25370
 const double TICKS_PER_REVOLUTION = 102.0; // For reference purposes.
 #else
 const double TICKS_PER_REVOLUTION = 1860.0; // For reference purposes.

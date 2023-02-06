@@ -10,6 +10,10 @@
 // Create odometry data publishers
 ros::Publisher odom_data_pub_quat;
 
+#define JGA25370 0
+#define JGB520 1
+#define MOTORTYPE JGB520
+
 // Hajime Cart parameter
 //const double wheel_radius= 0.085;
 //const double base_width = 0.236;
@@ -17,7 +21,7 @@ ros::Publisher odom_data_pub_quat;
 //const double xp_enc_ticks_meter = 6250.0 / (2.0 * _pi * wheel_radius);
 
 // Robot physical constants
-#if 1
+#if MOTORTYPE == JGA25370
 const double TICKS_PER_REVOLUTION = 102.0; // For reference purposes.
 #else
 const double TICKS_PER_REVOLUTION = 1860.0; // For reference purposes.
