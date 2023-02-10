@@ -25,21 +25,19 @@
 #define TXD2 17
 
 #define DEBUG 1
-
 #if (DEBUG == 1)
 #define DEBUG_PRINT(x) Serial2.print(x)
-#define DEBUG_PRINTF(x, y) Serial2.print(x, y)
 #define DEBUG_PRINTLN(x) Serial2.println(x)
-#define DEBUG_PRINTLNF(x, y) Serial2.println(x, y)
 #else
 #define DEBUG_PRINT(x)
-#define DEBUG_PRINTF(x, y)
 #define DEBUG_PRINTLN(x)
-#define DEBUG_PRINTLNF(x, y)
 #endif
 
+#define OLED 0
+#if OLED == 1
 // create an OLED display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+#endif
 
 #define PWM_PARAM 0
 #define PUB_VEL 0
@@ -542,19 +540,23 @@ ros::Subscriber<geometry_msgs::Twist> subCmdVel("cmd_vel", &calc_pwm_values);
 ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
 
 void setup() {
-
 #if (DEBUG == 1)
   Serial2.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
 #endif
 
-#if PWM_PARAM == 1
+#if (PWM_PARAM == 1)
   int pwm_constants[4];
   char buf[3];  //for debugging
 #endif
 
+#if (OLED == 1)
   // initialize OLED display with I2C address 0x3C
   oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+#endif
+
+  // configure LED for output
+  pinMode(LED_BUILTIN, OUTPUT);
 
   // Set pin states of the encoder
   pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
@@ -594,10 +596,7 @@ void setup() {
   RGB(ALL_OFF);            // RGB LED all off
 #endif
 
-  // configure LED for output
-  pinMode(LED_BUILTIN, OUTPUT);
-
-  DEBUG_PRINTLN("ESP32 start");
+    DEBUG_PRINTLN("ESP32 start");
 
   // ROS Setup
   nh.getHardware()->setBaud(115200);
@@ -605,6 +604,7 @@ void setup() {
   nh.advertise(rightPub);
   nh.advertise(leftPub);
   nh.subscribe(subCmdVel);
+
 #if PUB_VEL == 1
   nh.advertise(rightvelPub);
   nh.advertise(leftvelPub);
@@ -616,6 +616,8 @@ void setup() {
   while (!nh.connected()) {
     nh.spinOnce();
   }
+
+  DEBUG_PRINTLN("ROS connected");
 
 #if PWM_PARAM == 1
   nh.logwarn("S");
@@ -640,12 +642,14 @@ void setup() {
   }
 #endif
 
+#if OLED == 1
   oled.clearDisplay();          // clear display
   oled.setTextSize(1);          // set text size
   oled.setTextColor(WHITE);     // set text color
   oled.setCursor(0, 0);         // set position to display
   oled.println("ESP32 Start");  // set text
   oled.display();               // display on OLED
+#endif
 
 #if USE_PID == 1
   trackPIDLeft.SetMode(AUTOMATIC);

@@ -1,0 +1,10 @@
+<launch>
+  <!-- launching Arduino robot node -->
+  <node pkg="rosserial_python" type="serial_node.py" name="serial_node">
+    <param name="port" value="/dev/esp32Nodemcu"/>
+    <param name="baud" value="115200"/>
+  </node>
+
+  <rosparam command="load" file="$(find jessicar2_bringup)/config/motor.yaml" />
+
+</launch>

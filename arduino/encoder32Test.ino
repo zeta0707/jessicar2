@@ -45,6 +45,8 @@ long currentMillis = 0;
 
 int pwmReq = 0;
 
+bool blinkState = false;
+
 // Increment the number of ticks
 void IRAM_ATTR right_wheel_tick() {
 
@@ -132,6 +134,9 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("Motor econder test");
+
+  pinMode(LED_BUILTIN,OUTPUT);
+
   // Set pin states of the encoder
   pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
   pinMode(ENC_IN_LEFT_B, INPUT);
@@ -190,6 +195,9 @@ void loop() {
   if (currentMillis - previousMillis > interval) {
 
     previousMillis = currentMillis;
+    // blink LED to indicate activity
+    blinkState = !blinkState;
+    digitalWrite(LED_BUILTIN, blinkState);
 
     Serial.print("L:");
     Serial.print(left_wheel_tick_count);

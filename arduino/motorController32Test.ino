@@ -413,7 +413,8 @@ void setup() {
 
   Serial.begin(115200);
   Serial.println("Motor vel_cmd test");
-
+  pinMode(LED_BUILTIN,OUTPUT);
+  
   // Set pin states of the encoder
   pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
   pinMode(ENC_IN_LEFT_B, INPUT);

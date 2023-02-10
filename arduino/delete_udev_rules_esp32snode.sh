@@ -1,8 +1,8 @@
 #!/bin/bash
 
 echo "delete remap the device serial port(ttyUSBX) to arduinoNano"
-echo "sudo rm   /etc/udev/rules.d/arduinoNano.rules"
-sudo rm   /etc/udev/rules.d/arduinoNano.rules
+echo "sudo rm   /etc/udev/rules.d/esp32sNodemcu.rules"
+sudo rm   /etc/udev/rules.d/esp32sNodemcu.rules
 echo " "
 echo "Restarting udev"
 echo ""
