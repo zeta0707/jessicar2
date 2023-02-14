@@ -124,7 +124,7 @@ ros::Publisher rightvelPub("velRight", &right_vel_pub);
 #endif
 
 // Time interval for measurements in milliseconds
-const int interval = 30;
+const int INTERVAL = 30;
 long previousMillis = 0;
 long currentMillis = 0;
 
@@ -542,7 +542,7 @@ ros::Subscriber<std_msgs::Int16> subLed("rgbled", &ledcb);
 void setup() {
 #if (DEBUG == 1)
   Serial2.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, RXD2, TXD2);
+  Serial2.begin(115200, SERIAL_8N1, RXD2, TXD2);
 #endif
 
 #if (PWM_PARAM == 1)
@@ -596,7 +596,7 @@ void setup() {
   RGB(ALL_OFF);            // RGB LED all off
 #endif
 
-    DEBUG_PRINTLN("ESP32 start");
+  DEBUG_PRINTLN("ESP32 start");
 
   // ROS Setup
   nh.getHardware()->setBaud(115200);
@@ -669,8 +669,13 @@ void loop() {
 
   // If the time interval has passed, publish the number of ticks,
   // and calculate the velocities.
-  if (currentMillis - previousMillis > interval) {
+  if (currentMillis - previousMillis > INTERVAL) {
     previousMillis = currentMillis;
+
+    DEBUG_PRINT("LT:");
+    DEBUG_PRINT(int(left_wheel_tick_count.data));
+    DEBUG_PRINT(",RT:");
+    DEBUG_PRINTLN(int(right_wheel_tick_count.data));
 
     // Publish tick counts to topics
     leftPub.publish(&left_wheel_tick_count);
