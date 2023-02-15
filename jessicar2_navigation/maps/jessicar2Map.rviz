@@ -6,6 +6,7 @@ Panels:
       Expanded:
         - /Global Options1
         - /Axes1
+        - /Map3
         - /Path1/Offset1
         - /TF1/Frames1
         - /RobotModel1
@@ -72,17 +73,17 @@ Visualization Manager:
       Radius: 0.10000000149011612
       Reference Frame: <Fixed Frame>
       Value: true
-    - Alpha: 0.699999988079071
+    - Alpha: 0.30000001192092896
       Class: rviz/Map
       Color Scheme: costmap
-      Draw Behind: false
+      Draw Behind: true
       Enabled: true
       Name: Map
       Topic: /move_base/global_costmap/costmap
       Unreliable: false
       Use Timestamp: false
       Value: true
-    - Alpha: 0.699999988079071
+    - Alpha: 0.5
       Class: rviz/Map
       Color Scheme: costmap
       Draw Behind: false
@@ -169,7 +170,7 @@ Visualization Manager:
       Queue Size: 10
       Selectable: true
       Size (Pixels): 3
-      Size (m): 0.009999999776482582
+      Size (m): 0.029999999329447746
       Style: Flat Squares
       Topic: /scan
       Unreliable: false
@@ -267,4 +268,4 @@ Window Geometry:
     collapsed: true
   Width: 1493
   X: 218
-  Y: 143
+  Y: 113
