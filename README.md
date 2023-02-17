@@ -1,11 +1,16 @@
 # Jessicar2 DIY ROS navigation Robot
-This project is about ROS Package for Jessicar2 DIY robot
-Robot 3D model, BOM: Byungki
-Circuit: Byungki, ZETA7
-Aruduino scketch: ZETA7
-ROS code: ZETA7
-## Overview
+This project is about ROS Package for Jessicar2 DIY robot  
+Robot 3D model, BOM: Byungki  
+Circuit: Byungki, ZETA7  
+Aruduino scketch: ZETA7  
+ROS code: ZETA7  
 
+# Especially thanks
+Automatic Addision: https://automaticaddison.com/how-to-set-up-the-ros-navigation-stack-on-a-robot/  
+OMO R1 Mini: https://github.com/omorobot/omo_r1mini#readme  
+Other Open Source sites   
+
+## Overview
 <div align="center">
   <img src="images/jessicar2.jpg">
 </div>
@@ -17,14 +22,14 @@ ROS code: ZETA7
 </div>
 
 ## Installation
-Please download image from below location
+Please download image from below location   
 [jp451_2G_opencv346_64G.zip](https://drive.google.com/file/d/1UN2qikaxQqpnegdXYcd6U0yeBi4iRlJm/view?usp=sharing)
 
 ```bash
 id: jetson
 passwd: jetson
 ```
-Please follow instruction on blow Notion(in Korean)
+Please follow instruction on blow Notion(in Korean)   
 https://zeta7.notion.site/Jessicar-II-ec829f83c37241bda40e59cbeca561d7
 
 ## Additional packages
@@ -68,11 +73,13 @@ $ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
 
 ```
 This allows you to move the robot simply by keyboard input as
+```
 - W: Move FWD (Increase lin_vel.x)
 - A: Turn Left (Increase rot_vel.z)
 - S: Stop (Reset lin_vel.x, rot_vel.z)
 - D: Turn Right (Decrease rot_vel.z)
 - X: Move REV (Decrease lin_vel.x)
+```
 
 ## SLAM Mapping  
 
@@ -152,10 +159,10 @@ Once map is fully generated, run map_server to save **<name_of_map>.yaml** and *
 ```
 $ rosrun map_server map_saver -f <name_of_map>
 ```
-Terminate all nodes and copy these files and place into ROBOT's *~/catkin_ws/src/jessicar2/jessicar2_navigation/maps* 
+Terminate all nodes and copy these files and place into ROBOT's ~/catkin_ws/src/jessicar2/jessicar2_navigation/maps
 
 ## Navigation
-https://www.youtube.com/watch?v=BB2lmuOR4zw
+<iframe width="1098" height="618" src="https://www.youtube.com/embed/BB2lmuOR4zw" title="ROS1 navigation with DIY two wheel robot" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>   
 
 To start navigation launch below in ROBOT.  
 
