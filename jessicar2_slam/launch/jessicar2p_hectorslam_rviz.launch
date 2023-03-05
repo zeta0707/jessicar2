@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+
+<launch>
+
+  <node pkg="rviz" type="rviz" name="rviz"
+    args="-d $(find jessicar2_slam)/rviz/mapping_demo.rviz"/>
+
+  </include>
+
+</launch>

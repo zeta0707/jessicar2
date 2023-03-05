@@ -5,9 +5,10 @@ Circuit: Byungki, ZETA7
 Aruduino scketch: ZETA7  
 ROS code: ZETA7  
 
-# Especially thanks
+# Especially Thanks
 Automatic Addision: https://automaticaddison.com/how-to-set-up-the-ros-navigation-stack-on-a-robot/  
 OMO R1 Mini: https://github.com/omorobot/omo_r1mini#readme  
+ROBOTIZ: https://github.com/ROBOTIS-GIT/turtlebot3
 Other Open Source sites   
 
 ## Overview
@@ -92,12 +93,12 @@ This allows you to move the robot simply by keyboard input as
 To run 2D lidar based SLAM navigation, simply launch below in ROBOT.  
 
 ```
-$ roslaunch jessicar2_slam jessicar2_gmapping.launch
+$ roslaunch jessicar2_slam jessicar2_hectorslam.launch
 ```
 
 Launch below in HOST PC to open rviz environment to make map.  
 ```
-$ roslaunch jessicar2_slam jessicar2_gmapping_rviz.launch
+$ roslaunch jessicar2_slam jessicar2_hectorslam_rviz.launch
 
 roslaunch jessicar2_teleop jessicar2_teleop_key.launch
 # or
