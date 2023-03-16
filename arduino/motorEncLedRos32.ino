@@ -24,7 +24,7 @@
 #define RXD2 16
 #define TXD2 17
 
-#define DEBUG 1
+#define DEBUG 0
 #if (DEBUG == 1)
 #define DEBUG_PRINT(x) Serial2.print(x)
 #define DEBUG_PRINTLN(x) Serial2.println(x)
@@ -33,7 +33,7 @@
 #define DEBUG_PRINTLN(x)
 #endif
 
-#define OLED 0
+#define OLED 1
 #if OLED == 1
 // create an OLED display object connected to I2C
 Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
@@ -41,7 +41,6 @@ Adafruit_SSD1306 oled(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
 #define PWM_PARAM 0
 #define PUB_VEL 0
-#define VleftVRight 1
 #define USE_LED 1
 
 #define USE_PID 1
@@ -53,7 +52,7 @@ double trackAdjustValueR = 0.0;
 double trackSetpointR = 0.0;
 double trackErrorR = 0.0;
 
-double Kp = 20.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
+double Kp = 5.0;   //Determines how aggressively the PID reacts to the current amount of error (Proportional)
 double Ki = 10.0;  //Determines how aggressively the PID reacts to error over time (Integral)
 double Kd = 1.0;   //Determines how aggressively the PID reacts to the change in error (Derivative)
 
@@ -66,32 +65,33 @@ ros::NodeHandle nh;
 
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
 #define ENC_IN_LEFT_A 36
-#define ENC_IN_RIGHT_A 39
+#define ENC_IN_RIGHT_A 34
 // Other encoder output to Arduino to keep track of wheel direction
 // Tracks the direction of rotation.
-#define ENC_IN_LEFT_B 34
+#define ENC_IN_LEFT_B 39
 #define ENC_IN_RIGHT_B 35
 
 // Motor A connections, Left
 #define enA 32
 // Motor B connections, Right
 #define enB 33
+
 #define ENA_CH 0
 #define ENB_CH 1
 
-#define in1 25
-#define in2 26
-#define in3 27
-#define in4 14
+#define ain1 26
+#define ain2 25
+#define bin1 27
+#define bin2 14
+#define STBY 4
 
 // True = Forward; False = Reverse
 boolean Direction_left = true;
 boolean Direction_right = true;
 
-// Minumum and maximum values for 16-bit integers
-// Range of 65,535
-const int encoder_minimum = -32768;
-const int encoder_maximum = 32767;
+// Minumum and maximum values for 32-bit integers
+#define encoder_minimum -2147483648
+#define encoder_maximum 2147483647
 
 // LED control pins
 #define LED_L 19
@@ -178,10 +178,34 @@ float lastCmdVelReceived = 0.0;
 bool blinkState = false;
 
 /////////////////////// Tick Data Publishing Functions ////////////////////////
+// Increment the number of ticks
+void IRAM_ATTR left_wheel_tick() {
+  // Read the value for the encoder for the left wheel
+  int val = digitalRead(ENC_IN_LEFT_B);
+
+  if (val == LOW) {
+    Direction_left = true;  // Reverse
+  } else {
+    Direction_left = false;  // Forward
+  }
+
+  if (Direction_left) {
+    if (left_wheel_tick_count.data == encoder_maximum) {
+      left_wheel_tick_count.data = encoder_minimum;
+    } else {
+      left_wheel_tick_count.data++;
+    }
+  } else {
+    if (left_wheel_tick_count.data == encoder_minimum) {
+      left_wheel_tick_count.data = encoder_maximum;
+    } else {
+      left_wheel_tick_count.data--;
+    }
+  }
+}
 
 // Increment the number of ticks
 void IRAM_ATTR right_wheel_tick() {
-
   // Read the value for the encoder for the right wheel
   int val = digitalRead(ENC_IN_RIGHT_B);
 
@@ -203,33 +227,6 @@ void IRAM_ATTR right_wheel_tick() {
       right_wheel_tick_count.data = encoder_maximum;
     } else {
       right_wheel_tick_count.data--;
-    }
-  }
-}
-
-// Increment the number of ticks
-void IRAM_ATTR left_wheel_tick() {
-
-  // Read the value for the encoder for the left wheel
-  int val = digitalRead(ENC_IN_LEFT_B);
-
-  if (val == LOW) {
-    Direction_left = true;  // Reverse
-  } else {
-    Direction_left = false;  // Forward
-  }
-
-  if (Direction_left) {
-    if (left_wheel_tick_count.data == encoder_maximum) {
-      left_wheel_tick_count.data = encoder_minimum;
-    } else {
-      left_wheel_tick_count.data++;
-    }
-  } else {
-    if (left_wheel_tick_count.data == encoder_minimum) {
-      left_wheel_tick_count.data = encoder_maximum;
-    } else {
-      left_wheel_tick_count.data--;
     }
   }
 }
@@ -263,11 +260,6 @@ void calc_vel_left_wheel() {
 
   // Update the timestamp
   prevTime = (millis() / 1000.0);
-
-  if (velLeftWheel < 0.0)
-    digitalWrite(BUZZER, HIGH);
-  else
-    digitalWrite(BUZZER, LOW);
 }
 
 // Calculate the right wheel linear velocity in m/s every time a
@@ -296,66 +288,8 @@ void calc_vel_right_wheel() {
 
   // Update the timestamp
   prevTime = (millis() / 1000.0);
-
-  if (velRightWheel < 0.0)
-    digitalWrite(BUZZER, HIGH);
-  else
-    digitalWrite(BUZZER, LOW);
 }
 
-#if VleftVRight == 0
-// Take the velocity command as input and calculate the PWM values.
-void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
-
-  // Record timestamp of last velocity command received
-  lastCmdVelReceived = (millis() / 1000.0);
-
-  if (cmdVel.linear.x >= 0.0) {
-    // Calculate the PWM value given the desired velocity
-    pwmLeftReq = K_P * cmdVel.linear.x + K_b + K_bias;
-    pwmRightReq = K_P * cmdVel.linear.x + K_b;
-  } else {
-    pwmLeftReq = K_P * cmdVel.linear.x - K_b - K_bias;
-    pwmRightReq = K_P * cmdVel.linear.x - K_b;
-  }
-
-  // Turn left
-  if (cmdVel.angular.z > 0.1) {
-    pwmLeftReq = -PWM_TURN;
-    pwmRightReq = PWM_TURN;
-  }
-  // Turn right
-  else if (cmdVel.angular.z < -0.1) {
-    pwmLeftReq = PWM_TURN;
-    pwmRightReq = -PWM_TURN;
-  }
-
-  // Go straight
-  else {
-
-    // Remove any differences in wheel velocities
-    // to make sure the robot goes straight
-    static float prevDiff = 0.0;
-    static float prevPrevDiff = 0.0;
-    float currDifference = velLeftWheel - velRightWheel;
-    float avgDifference = (prevDiff + prevPrevDiff + currDifference) / 3.0;
-    prevPrevDiff = prevDiff;
-    prevDiff = currDifference;
-
-    // Correct PWM values of both wheels to make the vehicle go straight
-    pwmLeftReq -= (avgDifference * DRIFT_MULTIPLIER);
-    pwmRightReq += (avgDifference * DRIFT_MULTIPLIER);
-  }
-
-  // Handle low PWM values
-  if (abs(pwmLeftReq) < PWM_MIN) {
-    pwmLeftReq = 0;
-  }
-  if (abs(pwmRightReq) < PWM_MIN) {
-    pwmRightReq = 0;
-  }
-}
-#else  //VleftVRight
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   float vLeft, vRight;
@@ -400,7 +334,6 @@ void calc_pwm_values(const geometry_msgs::Twist& cmdVel) {
   trackPIDRight.SetMode(AUTOMATIC);
 #endif  //USE_PID
 }
-#endif  //VleftVRight
 
 void set_pwm_values() {
 
@@ -418,31 +351,31 @@ void set_pwm_values() {
 
   // Set the direction of the motors
   if (pwmLeftReq > 0) {  // Left wheel forward
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
+    digitalWrite(ain1, HIGH);
+    digitalWrite(ain2, LOW);
   } else if (pwmLeftReq < 0) {  // Left wheel reverse
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
+    digitalWrite(ain1, LOW);
+    digitalWrite(ain2, HIGH);
   } else if (pwmLeftReq == 0 && pwmLeftOut == 0) {  // Left wheel stop
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
+    digitalWrite(ain1, LOW);
+    digitalWrite(ain2, LOW);
   } else {  // Left wheel stop
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
+    digitalWrite(ain1, LOW);
+    digitalWrite(ain2, LOW);
   }
 
   if (pwmRightReq > 0) {  // Right wheel forward
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
+    digitalWrite(bin1, HIGH);
+    digitalWrite(bin2, LOW);
   } else if (pwmRightReq < 0) {  // Right wheel reverse
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
+    digitalWrite(bin1, LOW);
+    digitalWrite(bin2, HIGH);
   } else if (pwmRightReq == 0 && pwmRightOut == 0) {  // Right wheel stop
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, LOW);
+    digitalWrite(bin1, LOW);
+    digitalWrite(bin2, LOW);
   } else {  // Right wheel stop
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, LOW);
+    digitalWrite(bin1, LOW);
+    digitalWrite(bin2, LOW);
   }
 
   // Calculate the output PWM value by making slow changes to the current value
@@ -486,47 +419,58 @@ void set_pwm_values() {
   pwmLeftOut = (pwmLeftOut < 0) ? 0 : pwmLeftOut;
   pwmRightOut = (pwmRightOut < 0) ? 0 : pwmRightOut;
 
-  // Set the PWM value on the pins
-  ledcWrite(ENA_CH, pwmLeftOut);
-  ledcWrite(ENB_CH, pwmRightOut);
+  if (pwmLeftOut > 0) {
+    // Set the PWM value on the pins
+    ledcWrite(ENA_CH, pwmLeftOut);
+  } else {
+    // Set the PWM value on the pins
+    ledcWrite(ENA_CH, -pwmLeftOut);
+  }
+  if (pwmRightOut > 0) {
+    // Set the PWM value on the pins
+    ledcWrite(ENB_CH, pwmRightOut);
+  } else {
+    // Set the PWM value on the pins
+    ledcWrite(ENB_CH, -pwmRightOut);
+  }
 }
 
 void RGB(enum LEDBEHAV ledbehav) {
   switch (ledbehav) {
     case ALL_OFF:
-      digitalWrite(LED_R, HIGH);
-      digitalWrite(LED_L, HIGH);
-      digitalWrite(LED_B, HIGH);
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_L, LOW);
+      digitalWrite(LED_B, LOW);
       break;
     case LEDBACK:
-      digitalWrite(LED_R, HIGH);
-      digitalWrite(LED_L, HIGH);
-      digitalWrite(LED_B, LOW);
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_L, LOW);
+      digitalWrite(LED_B, HIGH);
       break;
     case LEDLEFT:
-      digitalWrite(LED_R, HIGH);
-      digitalWrite(LED_L, LOW);
-      digitalWrite(LED_B, HIGH);
-      break;
-    case LEDRIGHT:
       digitalWrite(LED_R, LOW);
       digitalWrite(LED_L, HIGH);
-      digitalWrite(LED_B, HIGH);
+      digitalWrite(LED_B, LOW);
       break;
-    case LEDFRONT:
-      digitalWrite(LED_R, LOW);
-      digitalWrite(LED_L, LOW);
-      digitalWrite(LED_B, HIGH);
-      break;
-    case ALL_ON:
-      digitalWrite(LED_R, LOW);
+    case LEDRIGHT:
+      digitalWrite(LED_R, HIGH);
       digitalWrite(LED_L, LOW);
       digitalWrite(LED_B, LOW);
       break;
-    default:
+    case LEDFRONT:
+      digitalWrite(LED_R, HIGH);
+      digitalWrite(LED_L, HIGH);
+      digitalWrite(LED_B, LOW);
+      break;
+    case ALL_ON:
       digitalWrite(LED_R, HIGH);
       digitalWrite(LED_L, HIGH);
       digitalWrite(LED_B, HIGH);
+      break;
+    default:
+      digitalWrite(LED_R, LOW);
+      digitalWrite(LED_L, LOW);
+      digitalWrite(LED_B, LOW);
       break;
   }
 }
@@ -550,11 +494,6 @@ void setup() {
   char buf[3];  //for debugging
 #endif
 
-#if (OLED == 1)
-  // initialize OLED display with I2C address 0x3C
-  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
-#endif
-
   // configure LED for output
   pinMode(LED_BUILTIN, OUTPUT);
 
@@ -568,16 +507,18 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENC_IN_LEFT_A), left_wheel_tick, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_IN_RIGHT_A), right_wheel_tick, RISING);
 
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
-  pinMode(in3, OUTPUT);
-  pinMode(in4, OUTPUT);
+  pinMode(ain1, OUTPUT);
+  pinMode(ain2, OUTPUT);
+  pinMode(bin1, OUTPUT);
+  pinMode(bin2, OUTPUT);
+  pinMode(STBY, OUTPUT);
 
   // Turn off motors - Initial state
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, LOW);
+  digitalWrite(ain1, LOW);
+  digitalWrite(ain2, LOW);
+  digitalWrite(bin1, LOW);
+  digitalWrite(bin2, LOW);
+  digitalWrite(STBY, HIGH);
 
   ledcSetup(ENA_CH, 5000, 8);  //enA, channel: 0, 5000Hz, 8bits = 256(0 ~ 255)
   ledcSetup(ENB_CH, 5000, 8);  //enB, channel: 1, 5000Hz, 8bits = 256(0 ~ 255)
@@ -589,6 +530,8 @@ void setup() {
   ledcWrite(ENA_CH, 0);
   ledcWrite(ENB_CH, 0);
 
+  DEBUG_PRINTLN("Started");
+
 #if USE_LED == 1
   pinMode(LED_L, OUTPUT);  // RGB color lights red control pin configuration output
   pinMode(LED_R, OUTPUT);  // RGB color light green control pin configuration output
@@ -596,7 +539,16 @@ void setup() {
   RGB(ALL_OFF);            // RGB LED all off
 #endif
 
-  DEBUG_PRINTLN("ESP32 start");
+#if (OLED == 1)
+  // initialize OLED display with I2C address 0x3C
+  oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  oled.clearDisplay();           // clear display
+  oled.setTextSize(1);           // set text size
+  oled.setTextColor(WHITE);      // set text color
+  oled.setCursor(0, 0);          // set position to display
+  oled.println("Jessicar II+");  // set text
+  oled.display();                // display on OLED
+#endif
 
   // ROS Setup
   nh.getHardware()->setBaud(115200);
@@ -613,6 +565,7 @@ void setup() {
 #if USE_LED == 1
   nh.subscribe(subLed);
 #endif
+
   while (!nh.connected()) {
     nh.spinOnce();
   }
@@ -640,15 +593,6 @@ void setup() {
     sprintf(buf, "%d", pwm_constants[3]);
     nh.logwarn(buf);
   }
-#endif
-
-#if OLED == 1
-  oled.clearDisplay();          // clear display
-  oled.setTextSize(1);          // set text size
-  oled.setTextColor(WHITE);     // set text color
-  oled.setCursor(0, 0);         // set position to display
-  oled.println("ESP32 Start");  // set text
-  oled.display();               // display on OLED
 #endif
 
 #if USE_PID == 1
@@ -691,8 +635,13 @@ void loop() {
     // blink LED to indicate activity
     blinkState = !blinkState;
     digitalWrite(LED_BUILTIN, blinkState);
-  }
 
+    if ((velLeftWheel < 0.0) || (velRightWheel < 0.0))
+      digitalWrite(BUZZER, HIGH);
+    else
+      digitalWrite(BUZZER, LOW);
+  }
+  
   // Stop the car if there are no cmd_vel messages
   if ((millis() / 1000) - lastCmdVelReceived > 1) {
     pwmLeftReq = 0;

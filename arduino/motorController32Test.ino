@@ -25,7 +25,7 @@ double trackAdjustValueR = 0.0;
 double trackSetpointR = 0.0;
 double trackErrorR = 0.0;
 
-double Kp = 20.0;  //Determines how aggressively the PID reacts to the current amount of error (Proportional)
+double Kp = 5.0;   //Determines how aggressively the PID reacts to the current amount of error (Proportional)
 double Ki = 10.0;  //Determines how aggressively the PID reacts to error over time (Integral)
 double Kd = 1.0;   //Determines how aggressively the PID reacts to the change in error (Derivative)
 
@@ -35,54 +35,53 @@ PID trackPIDRight(&trackErrorR, &trackAdjustValueR, &trackSetpointR, Kp, Ki, Kd,
 
 // Encoder output to Arduino Interrupt pin. Tracks the tick count.
 #define ENC_IN_LEFT_A 36
-#define ENC_IN_RIGHT_A 39
+#define ENC_IN_RIGHT_A 34
 // Other encoder output to Arduino to keep track of wheel direction
 // Tracks the direction of rotation.
-#define ENC_IN_LEFT_B 34
+#define ENC_IN_LEFT_B 39
 #define ENC_IN_RIGHT_B 35
 
 // Motor A connections, Left
 #define enA 32
 // Motor B connections, Right
 #define enB 33
+
 #define ENA_CH 0
 #define ENB_CH 1
 
-#define in1 25
-#define in2 26
-#define in3 27
-#define in4 14
+#define ain1 26
+#define ain2 25
+#define bin1 27
+#define bin2 14
+#define STBY 4
 
 // True = Forward; False = Reverse
 boolean Direction_left = true;
 boolean Direction_right = true;
 
-// Minumum and maximum values for 16-bit integers
-// Range of 65,535
-const int encoder_minimum = -32768;
-const int encoder_maximum = 32767;
+// Minumum and maximum values for 32-bit integers
+#define encoder_minimum -2147483648
+#define encoder_maximum 2147483647
 
 // Keep track of the number of wheel ticks
 std_msgs::Int16 right_wheel_tick_count;
 std_msgs::Int16 left_wheel_tick_count;
 
 // Time interval for measurements in milliseconds
-const int interval = 100;
+const int INTERVAL = 100;
 long previousMillis = 0;
 long currentMillis = 0;
 
 // Number of ticks per wheel revolution. We won't use this in this code.
-
 // Wheel radius in meters. We won't use this in this code.
 #define WHEEL_RADIUS (0.033)
 #define WHEEL_DIAMETER (WHEEL_RADIUS * 2)
 // Distance from center of the left tire to the center of the right tire in m. We won't use this in this code.
 // Number of ticks a wheel makes moving a linear distance of 1 meter
 // This value was measured manually.
-
 #define TICKS_PER_REVOLUTION (1860.0)
 #define TICKS_PER_METER (TICKS_PER_REVOLUTION / (2.0 * 3.141592 * WHEEL_RADIUS))
-#define WHEEL_BASE (0.140)
+#define WHEEL_BASE (0.160)
 
 #define K_P 1125.0
 #define K_b 3.5
@@ -110,10 +109,34 @@ float lastCmdVelReceived = 0.0;
 bool blinkState = false;
 
 /////////////////////// Tick Data Publishing Functions ////////////////////////
+// Increment the number of ticks
+void IRAM_ATTR left_wheel_tick() {
+  // Read the value for the encoder for the left wheel
+  int val = digitalRead(ENC_IN_LEFT_B);
+
+  if (val == LOW) {
+    Direction_left = true;  // Reverse
+  } else {
+    Direction_left = false;  // Forward
+  }
+
+  if (Direction_left) {
+    if (left_wheel_tick_count.data == encoder_maximum) {
+      left_wheel_tick_count.data = encoder_minimum;
+    } else {
+      left_wheel_tick_count.data++;
+    }
+  } else {
+    if (left_wheel_tick_count.data == encoder_minimum) {
+      left_wheel_tick_count.data = encoder_maximum;
+    } else {
+      left_wheel_tick_count.data--;
+    }
+  }
+}
 
 // Increment the number of ticks
 void IRAM_ATTR right_wheel_tick() {
-
   // Read the value for the encoder for the right wheel
   int val = digitalRead(ENC_IN_RIGHT_B);
 
@@ -135,33 +158,6 @@ void IRAM_ATTR right_wheel_tick() {
       right_wheel_tick_count.data = encoder_maximum;
     } else {
       right_wheel_tick_count.data--;
-    }
-  }
-}
-
-// Increment the number of ticks
-void IRAM_ATTR left_wheel_tick() {
-
-  // Read the value for the encoder for the left wheel
-  int val = digitalRead(ENC_IN_LEFT_B);
-
-  if (val == LOW) {
-    Direction_left = true;  // Reverse
-  } else {
-    Direction_left = false;  // Forward
-  }
-
-  if (Direction_left) {
-    if (left_wheel_tick_count.data == encoder_maximum) {
-      left_wheel_tick_count.data = encoder_minimum;
-    } else {
-      left_wheel_tick_count.data++;
-    }
-  } else {
-    if (left_wheel_tick_count.data == encoder_minimum) {
-      left_wheel_tick_count.data = encoder_maximum;
-    } else {
-      left_wheel_tick_count.data--;
     }
   }
 }
@@ -228,38 +224,6 @@ void calc_vel_right_wheel() {
   Serial.println(numOfTicks);
 }
 
-#if VleftVRight == 0
-// Take the velocity command as input and calculate the PWM values.
-void calc_pwm_values(float linearx, float angularz) {
-
-  if (linearx >= 0.0) {
-    // Calculate the PWM value given the desired velocity
-    pwmLeftReq = int(K_P * linearx + K_b + K_bias);
-    pwmRightReq = int(K_P * linearx + K_b);
-  } else {
-    pwmLeftReq = int(K_P * linearx - K_b - K_bias);
-    pwmRightReq = int(K_P * linearx - K_b);
-  }
-
-  // Turn left
-  if (angularz > 0.4) {
-    pwmLeftReq = -PWM_TURN;
-    pwmRightReq = PWM_TURN;
-  }
-  // Turn right
-  else if (angularz < -0.4) {
-    pwmLeftReq = PWM_TURN;
-    pwmRightReq = -PWM_TURN;
-  }
-
-  // Handle low PWM values
-  if (abs(pwmLeftReq) < PWM_MIN) {
-    pwmLeftReq = 0;
-  }
-  if (abs(pwmRightReq) < PWM_MIN) {
-    pwmRightReq = 0;
-  }
-#else
 // Take the velocity command as input and calculate the PWM values.
 void calc_pwm_values(float linearx, float angularz) {
 
@@ -286,7 +250,6 @@ void calc_pwm_values(float linearx, float angularz) {
   if (abs(pwmRightReq) < PWM_MIN) {
     pwmRightReq = 0;
   }
-#endif
 
 #if USE_PID == 1
   //reset and start again PID controller
@@ -319,31 +282,31 @@ void set_pwm_values() {
 
   // Set the direction of the motors
   if (pwmLeftReq > 0) {  // Left wheel forward
-    digitalWrite(in1, HIGH);
-    digitalWrite(in2, LOW);
+    digitalWrite(ain1, HIGH);
+    digitalWrite(ain2, LOW);
   } else if (pwmLeftReq < 0) {  // Left wheel reverse
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, HIGH);
+    digitalWrite(ain1, LOW);
+    digitalWrite(ain2, HIGH);
   } else if (pwmLeftReq == 0 && pwmLeftOut == 0) {  // Left wheel stop
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
+    digitalWrite(ain1, LOW);
+    digitalWrite(ain2, LOW);
   } else {  // Left wheel stop
-    digitalWrite(in1, LOW);
-    digitalWrite(in2, LOW);
+    digitalWrite(ain1, LOW);
+    digitalWrite(ain2, LOW);
   }
 
   if (pwmRightReq > 0) {  // Right wheel forward
-    digitalWrite(in3, HIGH);
-    digitalWrite(in4, LOW);
+    digitalWrite(bin1, HIGH);
+    digitalWrite(bin2, LOW);
   } else if (pwmRightReq < 0) {  // Right wheel reverse
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, HIGH);
+    digitalWrite(bin1, LOW);
+    digitalWrite(bin2, HIGH);
   } else if (pwmRightReq == 0 && pwmRightOut == 0) {  // Right wheel stop
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, LOW);
+    digitalWrite(bin1, LOW);
+    digitalWrite(bin2, LOW);
   } else {  // Right wheel stop
-    digitalWrite(in3, LOW);
-    digitalWrite(in4, LOW);
+    digitalWrite(bin1, LOW);
+    digitalWrite(bin2, LOW);
   }
 
   Serial.print("sReq:");
@@ -404,17 +367,28 @@ void set_pwm_values() {
   pwmLeftOut = (pwmLeftOut < 0) ? 0 : pwmLeftOut;
   pwmRightOut = (pwmRightOut < 0) ? 0 : pwmRightOut;
 
-  // Set the PWM value on the pins
-  ledcWrite(ENA_CH, pwmLeftOut);
-  ledcWrite(ENB_CH, pwmRightOut);
+  if (pwmLeftOut > 0) {
+    // Set the PWM value on the pins
+    ledcWrite(ENA_CH, pwmLeftOut);
+  } else {
+    // Set the PWM value on the pins
+    ledcWrite(ENA_CH, -pwmLeftOut);
+  }
+  if (pwmRightOut > 0) {
+    // Set the PWM value on the pins
+    ledcWrite(ENB_CH, pwmRightOut);
+  } else {
+    // Set the PWM value on the pins
+    ledcWrite(ENB_CH, -pwmRightOut);
+  }
 }
 
 void setup() {
 
   Serial.begin(115200);
   Serial.println("Motor vel_cmd test");
-  pinMode(LED_BUILTIN,OUTPUT);
-  
+  pinMode(LED_BUILTIN, OUTPUT);
+
   // Set pin states of the encoder
   pinMode(ENC_IN_LEFT_A, INPUT_PULLUP);
   pinMode(ENC_IN_LEFT_B, INPUT);
@@ -425,16 +399,18 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENC_IN_LEFT_A), left_wheel_tick, RISING);
   attachInterrupt(digitalPinToInterrupt(ENC_IN_RIGHT_A), right_wheel_tick, RISING);
 
-  pinMode(in1, OUTPUT);
-  pinMode(in2, OUTPUT);
-  pinMode(in3, OUTPUT);
-  pinMode(in4, OUTPUT);
+  pinMode(ain1, OUTPUT);
+  pinMode(ain2, OUTPUT);
+  pinMode(bin1, OUTPUT);
+  pinMode(bin2, OUTPUT);
+  pinMode(STBY, OUTPUT);
 
   // Turn off motors - Initial state
-  digitalWrite(in1, LOW);
-  digitalWrite(in2, LOW);
-  digitalWrite(in3, LOW);
-  digitalWrite(in4, LOW);
+  digitalWrite(ain1, LOW);
+  digitalWrite(ain2, LOW);
+  digitalWrite(bin1, LOW);
+  digitalWrite(bin2, LOW);
+  digitalWrite(STBY, HIGH);
 
   ledcSetup(ENA_CH, 5000, 8);  //enA, channel: 0, 5000Hz, 8bits = 256(0 ~ 255)
   ledcSetup(ENB_CH, 5000, 8);  //enB, channel: 1, 5000Hz, 8bits = 256(0 ~ 255)
@@ -475,7 +451,7 @@ void loop() {
 
   // If the time interval has passed, publish the number of ticks,
   // and calculate the velocities.
-  if (currentMillis - previousMillis > interval) {
+  if (currentMillis - previousMillis > INTERVAL) {
     previousMillis = currentMillis;
     // blink LED to indicate activity
     blinkState = !blinkState;

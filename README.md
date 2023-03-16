@@ -8,7 +8,7 @@ ROS code: ZETA7
 # Especially Thanks
 Automatic Addision: https://automaticaddison.com/how-to-set-up-the-ros-navigation-stack-on-a-robot/  
 OMO R1 Mini: https://github.com/omorobot/omo_r1mini#readme  
-ROBOTIZ: https://github.com/ROBOTIS-GIT/turtlebot3
+ROBOTIZ: https://github.com/ROBOTIS-GIT/turtlebot3  
 Other Open Source sites   
 
 ## Overview
@@ -163,7 +163,9 @@ $ rosrun map_server map_saver -f <name_of_map>
 Terminate all nodes and copy these files and place into ROBOT's ~/catkin_ws/src/jessicar2/jessicar2_navigation/maps
 
 ## Navigation
-<iframe width="1098" height="618" src="https://www.youtube.com/embed/BB2lmuOR4zw" title="ROS1 navigation with DIY two wheel robot" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>   
+<div align="center">
+  <img src="images/navigation.gif">
+</div>  
 
 To start navigation launch below in ROBOT.  
 

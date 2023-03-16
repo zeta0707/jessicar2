@@ -39,11 +39,10 @@
   <!-- Add AMCL example for differential drive robots for Localization -->
   <!-- Subscribe: /scan, /tf, /initialpose, /map -->
   <!-- Publish: /amcl_pose, /particlecloud, /tf -->
-  <!-- <include file="$(find amcl)/examples/amcl_diff.launch"/>  -->
   <include file="$(find jessicar2_navigation)/launch/jessicar2_amcl.launch"/>
 
   <!-- Map File -->
-  <arg name="map_file" default="$(find jessicar2_navigation)/maps/livingroom.yaml"/>
+  <arg name="map_file" default="$(find jessicar2_navigation)/maps/gmapping.yaml"/>
 
   <!-- Map Server -->
   <!-- Publish: /map, /map_metadata -->
