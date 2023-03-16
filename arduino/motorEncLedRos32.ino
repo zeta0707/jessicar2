@@ -539,6 +539,8 @@ void setup() {
   RGB(ALL_OFF);            // RGB LED all off
 #endif
 
+  pinMode(BUZZER, OUTPUT);
+  
 #if (OLED == 1)
   // initialize OLED display with I2C address 0x3C
   oled.begin(SSD1306_SWITCHCAPVCC, 0x3C);
@@ -641,7 +643,7 @@ void loop() {
     else
       digitalWrite(BUZZER, LOW);
   }
-  
+
   // Stop the car if there are no cmd_vel messages
   if ((millis() / 1000) - lastCmdVelReceived > 1) {
     pwmLeftReq = 0;
