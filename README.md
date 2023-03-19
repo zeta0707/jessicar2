@@ -64,15 +64,23 @@ ros-melodic-cartographer-ros
 ## Running the Robot
 
 To simply run the robot to control with teleop keyboard command, enter below while roscore is running in the **HOST PC**
-
+### Jessicar II
 ```
 $ roslaunch jessicar2_bringup arduino_bringup.launch
 
 $ roslaunch jessicar2_teleop jessicar2_teleop_joy.launch
-or
+# or
 $ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
-
 ```
+### Jessicar II+
+```
+$ roslaunch jessicar2_bringup nodemcu32.launch
+
+$ roslaunch jessicar2_teleop jessicar2_teleop_joy.launch
+# or
+$ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
+```
+
 This allows you to move the robot simply by keyboard input as
 ```
 - W: Move FWD (Increase lin_vel.x)
@@ -90,8 +98,13 @@ This allows you to move the robot simply by keyboard input as
   <img src="images/hectorslam.png">
 </div>
 
+<div align="center">
+  <img src="images/hectorslam.gif">
+</div>
+
 To run 2D lidar based SLAM navigation, simply launch below in ROBOT.  
 
+### Jessicar II
 ```
 $ roslaunch jessicar2_slam jessicar2_hectorslam.launch
 ```
@@ -104,6 +117,21 @@ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
 # or
 roslaunch jessicar2_teleop jessicar2_teleop_joy.launch
 ```
+
+### Jessicar II+
+```
+$ roslaunch jessicar2_slam jessicar2p_hectorslam.launch
+```
+
+Launch below in HOST PC to open rviz environment to make map.  
+```
+$ roslaunch jessicar2_slam jessicar2p_hectorslam_rviz.launch
+
+roslaunch jessicar2_teleop jessicar2_teleop_key.launch
+# or
+roslaunch jessicar2_teleop jessicar2_teleop_joy.launch
+```
+
 Move the robot using keyboard input (W: FWD, A: Left, D: Right, X: REV) and the map will be expanded as it go.
 
 ### Mapping using Gmapping
@@ -112,8 +140,26 @@ Move the robot using keyboard input (W: FWD, A: Left, D: Right, X: REV) and the 
   <img src="images/gmapping.png">
 </div>
 
+<div align="center">
+  <img src="images/gmapping.gif">
+</div>
+
 To run 2D lidar based SLAM navigation, simply launch below in ROBOT.  
 
+### Jessicar II
+```
+$ roslaunch jessicar2_slam jessicar2_gmapping.launch
+```
+
+Launch below in HOST PC to open rviz environment to make map.  
+```
+$ roslaunch jessicar2_slam jessicar2_gmapping_rviz.launch
+
+$ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
+# or
+$ roslaunch jessicar2_teleop jessicar2_teleop_joy.launch
+```
+### Jessicar II+
 ```
 $ roslaunch jessicar2_slam jessicar2_gmapping.launch
 ```
@@ -137,6 +183,7 @@ https://google-cartographer-ros.readthedocs.io/en/latest/
 
 To run cartographer-ros, simply launch below in ROBOT.
 
+### Jessicar II
 ```
 $ roslaunch jessicar2_slam jessicar2_cartographer.launch
 ```
@@ -149,8 +196,26 @@ $ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
 or
 $ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
 ```
+### Jessicar II+
+```
+$ roslaunch jessicar2_slam jessicar2p_cartographer.launch
+```
+
+Launch below in HOST PC to run rviz environment and robot control.  
+```
+$ roslaunch jessicar2_slam jessicar2_cartographer_rviz.launch
+
+$ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
+or
+$ roslaunch jessicar2_teleop jessicar2_teleop_key.launch
+```
+
 <div align="center">
   <img src="images/cartographer.png">
+</div>
+
+<div align="center">
+  <img src="images/cartographer.gif">
 </div>
 
 ### Save map file
@@ -169,8 +234,17 @@ Terminate all nodes and copy these files and place into ROBOT's ~/catkin_ws/src/
 
 To start navigation launch below in ROBOT.  
 
+### Jessicar II
 ```
 $ roslaunch jessicar2_navigation jessicarNavi.launch
+```
+Then launch below in HOST PC to open the robot in rviz environment.  
+```
+$ roslaunch jessicar2_navigation jessicarNavi_rviz.launch
+```
+### Jessicar II+
+```
+$ roslaunch jessicar2_navigation jessicar2p_Navi.launch
 ```
 Then launch below in HOST PC to open the robot in rviz environment.  
 ```
