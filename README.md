@@ -1,8 +1,9 @@
-# Jessicar2 DIY ROS navigation Robot
-This project is about ROS Package for Jessicar2 DIY robot  
+# Jessicar2/2+ DIY ROS navigation Robot
+This project is about ROS Package for navigation with DIY robot  
 Robot 3D model, BOM: Byungki  
 Circuit: Byungki, ZETA7  
-Aruduino scketch: ZETA7  
+PCB layout: Byungki
+Aruduino/ESP32 scketch: ZETA7  
 ROS code: ZETA7  
 
 # Especially Thanks
@@ -11,13 +12,27 @@ OMO R1 Mini: https://github.com/omorobot/omo_r1mini#readme
 ROBOTIZ: https://github.com/ROBOTIS-GIT/turtlebot3  
 Other Open Source sites   
 
+# jessicar2/arduino folder
+## Jessicar 2, it use Arudino Nano
+encoderTest.ino: Check encoder tick
+motorControllerTest.ino: Check/Tune motor controller
+motorEncLedRos.ino: Please burn this for ROS navigation
+create_udev_rules.sh, delete_udev_rules.sh, arduinoNano.rules: udev rule for Arduino Nano
+
+## Jessicar 2+, it use ESP32 NodeMcu
+ledBuzzer32Test.ino: Check LED, Buzzer
+encoder32Test.ino: Check encoder tick
+motorController32Test.ino: Check/Tune motor controller
+motorEncLed32Ros.ino: Please burn this for ROS navigation
+create_udev_rules_esp32snode.sh, delete_udev_rules_esp32snode.sh, esp32sNodemcu.rules: udev rule for ESP32
+create_udev_rules_rplidar.sh, delete_udev_rules_rplidar.sh, rplidar.rules: udev rule for RPLidar
+
 ## Overview
 <div align="center">
   <img src="images/jessicar2.jpg">
 </div>
 
 ## Circuit Block Diagram
-
 <div align="center">
   <img src="images/jessicar2_2nd_bb.jpg">
 </div>
