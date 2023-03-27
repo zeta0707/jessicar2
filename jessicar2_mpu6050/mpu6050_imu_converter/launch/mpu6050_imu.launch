@@ -1,0 +1,9 @@
+<launch>
+	<include file="$(find jessicar2_bringup)/launch/nodemcu32.launch" />	
+
+	<node pkg="mpu6050_imu_converter" type="mpu6050_imu_converter_node" name="mpu6050_imu_converter" output="screen">
+		<remap from="~/imu" to="/imu/data"/>
+	</node>
+	
+	<!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find mpu6050_imu_converter)/rviz/mpu6050_imu.rviz"/> -->
+</launch>
