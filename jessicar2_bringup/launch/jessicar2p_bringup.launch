@@ -17,7 +17,7 @@
 </node>  
 
 <!-- Publish: /imu/data -->
-<include file="$(find mpu_6050_driver)/launch/mpu6050.launch"/>
+<include file="$(find mpu6050_imu_converter)/launch/mpu6050_imu.launch"/>
 
 <rosparam command="load" file="$(find jessicar2_bringup)/config/motor.yaml" />
 
