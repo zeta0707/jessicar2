@@ -1,5 +1,5 @@
 <launch>
-	<include file="$(find jessicar2_bringup)/launch/nodemcu32.launch" />	
+	<!--  <include file="$(find jessicar2_bringup)/launch/nodemcu32.launch" />	-->
 
 	<node pkg="mpu6050_imu_converter" type="mpu6050_imu_converter_node" name="mpu6050_imu_converter" output="screen">
 		<remap from="~/imu" to="/imu/data"/>
