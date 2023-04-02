@@ -23,7 +23,8 @@ create_udev_rules.sh, delete_udev_rules.sh, arduinoNano.rules: udev rule for Ard
 ledBuzzer32Test.ino: Check LED, Buzzer   
 encoder32Test.ino: Check encoder tick   
 motorController32Test.ino: Check/Tune motor controller   
-motorEncLed32Ros.ino: Please burn this for ROS navigation   
+motorEncLed32Ros.ino: ROS implementation, motor control and LED     
+motorEncLedMpu32Ros.ino: Please burn this for ROS navigation, motorEncLed32Ros.ino + MPU6050   
 create_udev_rules_esp32snode.sh, delete_udev_rules_esp32snode.sh, esp32sNodemcu.rules: udev rule for ESP32    
 create_udev_rules_rplidar.sh, delete_udev_rules_rplidar.sh, rplidar.rules: udev rule for RPLidar   
 
@@ -33,13 +34,21 @@ create_udev_rules_rplidar.sh, delete_udev_rules_rplidar.sh, rplidar.rules: udev 
 </div>
 
 ## Circuit Block Diagram
+
+### Jessicar II
 <div align="center">
   <img src="images/jessicar2_2nd_bb.jpg">
 </div>
 
+### Jessicar II+
+<div align="center">
+  <img src="images/jessicar2+.png">
+</div>
+
 ## Installation
 Please download image from below location   
-[jp451_2G_opencv346_64G.zip](https://drive.google.com/file/d/1UN2qikaxQqpnegdXYcd6U0yeBi4iRlJm/view?usp=sharing)
+[Jetson 4G] https://drive.google.com/file/d/1HU5F1cwiw2wzuNBdLL9R3Wvpg5AXLzw5/view?usp=share_link   
+[Jetson 2G] https://drive.google.com/file/d/1mT9gTjAO0WtUF7FNO4q0Yf8rEwAnV8Ca/view?usp=share_link   
 
 ```bash
 id: jetson
@@ -52,7 +61,7 @@ https://zeta7.notion.site/Jessicar-II-ec829f83c37241bda40e59cbeca561d7
 
 Below pacakges are maybe required run this package and are located in ROBOT's **catkin_ws/src** folder
 - https://github.com/Slamtec/rplidar_ros.git to run RpLidar
-
+- https://github.com/tu-darmstadt-ros-pkg/hector_slam.git to run Hector slam   
 
 ## Dependency
 
