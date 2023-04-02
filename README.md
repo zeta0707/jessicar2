@@ -39,12 +39,12 @@ create_udev_rules_rplidar.sh, delete_udev_rules_rplidar.sh, rplidar.rules: udev 
 
 ### Jessicar II
 <div align="center">
-  <img src="images/jessicar2_2nd_bb.jpg" width="200" />
+  <img src="images/jessicar2_2nd_bb.jpg" width="350" />
 </div>
 
 ### Jessicar II+
 <div align="center">
-  <img src="images/jessicar2+.png" width="200" />
+  <img src="images/jessicar2+.png" width="350" />
 </div>
 
 ## Installation
