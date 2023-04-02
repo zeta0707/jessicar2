@@ -2,7 +2,7 @@
 This project is about ROS Package for navigation with DIY robot  
 Robot 3D model, BOM: Byungki  
 Circuit: Byungki, ZETA7    
-PCB layout: Byungki
+PCB layout: Byungki   
 Aruduino/ESP32 scketch: ZETA7  
 ROS code: ZETA7  
 
@@ -13,13 +13,15 @@ ROBOTIZ: https://github.com/ROBOTIS-GIT/turtlebot3
 Other Open Source sites   
 
 # jessicar2/arduino Folder explanation
-### Jessicar 2, it use Arudino Nano
+### Jessicar 2, it uses Arudino Nano
+```
 encoderTest.ino: Check encoder tick   
 motorControllerTest.ino: Check/Tune motor controller   
 motorEncLedRos.ino: Please burn this for ROS navigation   
 create_udev_rules.sh, delete_udev_rules.sh, arduinoNano.rules: udev rule for Arduino Nano   
-
-### Jessicar 2+, it use ESP32 NodeMcu
+```
+### Jessicar 2+, it uses ESP32 NodeMcu
+```
 ledBuzzer32Test.ino: Check LED, Buzzer   
 encoder32Test.ino: Check encoder tick   
 motorController32Test.ino: Check/Tune motor controller   
@@ -27,7 +29,7 @@ motorEncLed32Ros.ino: ROS implementation, motor control and LED
 motorEncLedMpu32Ros.ino: Please burn this for ROS navigation, motorEncLed32Ros.ino + MPU6050   
 create_udev_rules_esp32snode.sh, delete_udev_rules_esp32snode.sh, esp32sNodemcu.rules: udev rule for ESP32    
 create_udev_rules_rplidar.sh, delete_udev_rules_rplidar.sh, rplidar.rules: udev rule for RPLidar   
-
+```
 ## Overview
 <div align="center">
   <img src="images/jessicar2.jpg">
@@ -37,12 +39,12 @@ create_udev_rules_rplidar.sh, delete_udev_rules_rplidar.sh, rplidar.rules: udev 
 
 ### Jessicar II
 <div align="center">
-  <img src="images/jessicar2_2nd_bb.jpg">
+  <img src="images/jessicar2_2nd_bb.jpg" width="200" />
 </div>
 
 ### Jessicar II+
 <div align="center">
-  <img src="images/jessicar2+.png">
+  <img src="images/jessicar2+.png" width="200" />
 </div>
 
 ## Installation
