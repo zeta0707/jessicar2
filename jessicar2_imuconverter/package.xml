@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package>
-  <name>mpu6050_imu_converter</name>
+  <name>jessicar2_imuconverter</name>
   <version>0.0.0</version>
   <description>The mpu6050_imu_converter package</description>
 
@@ -9,7 +9,7 @@
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
   <maintainer email="christian@todo.todo">Christian Rose</maintainer>
   <maintainer email="kohlbrecher@sim.tu-darmstadt.de">Stefan Kohlbrecher</maintainer>
-
+  <maintainer email="zeta0707@gmail.com">ChangWhan Lee</maintainer>
 
   <license>BSD</license>
 

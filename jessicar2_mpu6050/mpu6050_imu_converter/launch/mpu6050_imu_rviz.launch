@@ -1,3 +1,0 @@
-<launch>	
-	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find mpu6050_imu_converter)/rviz/mpu6050_imu.rviz"/>
-</launch>

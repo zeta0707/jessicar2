@@ -1,0 +1,3 @@
+<launch>	
+	<node name="rviz" pkg="rviz" type="rviz" args="-d $(find jessicar2_imuconverter)/rviz/mpu6050_imu.rviz"/>
+</launch>
