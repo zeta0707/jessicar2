@@ -1,8 +1,8 @@
 <launch>
   <!-- Transformation Configuration ... Setting Up the Relationships Between Coordinate Frames -->
-  <node pkg="tf" type="static_transform_publisher" name="baselink_to_laserlink" args="0.03 0 0.00 0 0 0 base_link laser_link 30" />
-  <node pkg="tf" type="static_transform_publisher" name="baselink_to_imulink" args="0 0 0.6 0 0 0 base_link imu_link 30" />
-  <node pkg="tf" type="static_transform_publisher" name="basefootprint_to_baselink" args="0 0 0.04 0 0 0 base_footprint base_link 30" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink_to_laserlink"     args="0.03 0 0.00 0 0 0 base_link laser_link 30" />
+  <node pkg="tf" type="static_transform_publisher" name="baselink_to_imulink"       args="0.03 0 0.06 0 0 0 base_link imu_link 30" />
+  <node pkg="tf" type="static_transform_publisher" name="basefootprint_to_baselink" args="0.00 0 0.02 0 0 0 base_footprint base_link 30" />
 
   <include file="$(find jessicar2_bringup)/launch/jessicar2p_bringup.launch" />
 
@@ -28,7 +28,7 @@
     <param name="freq" value="30.0"/>
     <param name="sensor_timeout" value="1.0"/>
     <param name="odom_used" value="true"/>
-    <param name="imu_used" value="true"/>
+    <param name="imu_used" value="false"/>
     <param name="vo_used" value="false"/>
     <param name="gps_used" value="false"/>
     <param name="debug" value="false"/>
