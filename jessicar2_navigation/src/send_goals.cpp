@@ -70,37 +70,37 @@ int main(int argc, char** argv){
       case 1:
         cout << "\nGoal Location: Bathroom\n" << endl;
         goal.target_pose.pose.position.x = 2.45561647415;
-    	goal.target_pose.pose.position.y = -0.0121927261353;
+        goal.target_pose.pose.position.y = -0.0121927261353;
         goal.target_pose.pose.orientation.w = 1.0;
         break;
       case 2:
         cout << "\nGoal Location: Bedroom\n" << endl;
         goal.target_pose.pose.position.x = -0.189524292946;
-    	goal.target_pose.pose.position.y = -0.00691384077072;
+        goal.target_pose.pose.position.y = -0.00691384077072;
         goal.target_pose.pose.orientation.w = 1.0;
         break;
       case 3:
         cout << "\nGoal Location: Front Door\n" << endl;
         goal.target_pose.pose.position.x = 0.170517921448;
-    	goal.target_pose.pose.position.y = -1.67353320122;
+        goal.target_pose.pose.position.y = -1.67353320122;
         goal.target_pose.pose.orientation.w = 1.0;
         break;
       case 4:
         cout << "\nGoal Location: Living Room\n" << endl;
         goal.target_pose.pose.position.x = 5.3;
-    	goal.target_pose.pose.position.y = 2.7;
+        goal.target_pose.pose.position.y = 2.7;
         goal.target_pose.pose.orientation.w = 1.0;
         break;
       case 5:
         cout << "\nGoal Location: Home Office\n" << endl;
         goal.target_pose.pose.position.x = 2.5;
-    	goal.target_pose.pose.position.y = 2.0;
+        goal.target_pose.pose.position.y = 2.0;
         goal.target_pose.pose.orientation.w = 1.0;
         break;
       case 6:
         cout << "\nGoal Location: Kitchen\n" << endl;
         goal.target_pose.pose.position.x = 3.0;
-    	goal.target_pose.pose.position.y = 6.0;
+        goal.target_pose.pose.position.y = 6.0;
         goal.target_pose.pose.orientation.w = 1.0;
         break;
       default:
