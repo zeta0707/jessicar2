@@ -42,7 +42,7 @@
   <include file="$(find jessicar2_navigation)/launch/jessicar2_amcl.launch"/>
 
   <!-- Map File -->
-  <arg name="map_file" default="$(find jessicar2_navigation)/maps/gmapping.yaml"/>
+  <arg name="map_file" default="$(find jessicar2_navigation)/maps/maker1.yaml"/>
 
   <!-- Map Server -->
   <!-- Publish: /map, /map_metadata -->
